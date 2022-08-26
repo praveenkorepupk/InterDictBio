@@ -60,8 +60,11 @@ ui <- dashboardPage(
                             tabPanel("Admin", 
                                      # DT::dataTableOutput("mytable3"),
                                      # add button to add column
-                                     radioButtons("select_input", "Select row or column", choices = c("row", "column")),
-                                     fileInput("file1", "Choose CSV File To Add Rows",
+                                     radioButtons("select_input", "Choose Row or Column", choices = c("Row", "Column")),
+                                     box(id = "rowID",width = 12,
+                                         fluidRow(style = "padding: 5px 14px 5px 14px;
+                                              margin: 5px 5px 5px 5px; ",                                         
+                                     fileInput("file1", "Upload CSV To Add Rows",
                                                accept = c(
                                                  "text/csv",
                                                  "text/comma-separated-values,text/plain",
@@ -69,8 +72,13 @@ ui <- dashboardPage(
                                      actionButton("update", "Combine Rows"),
                                      actionButton("disp1", "Display"),
                                      tableOutput("contents"),
-                                     downloadButton("columnTemplate", "Download Template"),
-                                     fileInput("file2", "Choose CSV File To Add Columns",
+                                     fluidRow(style = "padding:5px 15px 5px 5px; margin: 15px 0px 0px 0px;",
+                                     downloadButton("rowsTemplate", "Download Template")))),
+                                     
+                                     box(id = "columnID", width = 12,
+                                     fluidRow(style = "padding: 5px 14px 5px 14px;
+                                          margin: 5px 5px 5px 5px; ",                                         
+                                     fileInput("file2", "Upload CSV To Add Columns",
                                                accept = c(
                                                  "text/csv",
                                                  "text/comma-separated-values,text/plain",
@@ -78,13 +86,15 @@ ui <- dashboardPage(
                                      actionButton("update2", "Combine Columns"),
                                      actionButton("disp2", "Display"),
                                      tableOutput("contents2"),
-                                     downloadButton("rowsTemplate", "Download Template"),
+                                     div(style = "margin: 15px 0px 0px 0px; width:100%;"),
+                                     downloadButton("columnTemplate", "Download column Template")),
                                      
                                      useShinyalert(),
-                                     fluidRow(
-                                       actionButton(inputId = "addColumn", "New Column"),
+                                     fluidRow(style = "padding: 40px 14px 5px 14px;
+                                              margin: 5px 5px 5px 5px; ",
                                        # custom column name
-                                       textInput(inputId = "nameColumn", "New Column Name")),
+                                       textInput(inputId = "nameColumn", "Enter Column Name"),
+                                       actionButton(inputId = "addColumn", "Create Column"))),
                             )
   ),tags$head(tags$style(HTML('
         /* logo */
@@ -134,11 +144,12 @@ server <- function(input, output, session) {
   mon <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
   
   output$sampleData <- renderDataTable(server = TRUE,{
-    df100 <- as.data.frame(mon$aggregate('[{"$limit": 100}]'))
+    df100 <- as.data.frame(mon$aggregate('[{"$limit": 1000}]'))
+    df100 <- unique(df100[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
     datatable(df100)
   })
   
-  seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":100}]'
+  seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":2000}]'
   # seqQry <- '[{"$group":{"_id":"$Sequence"}}]'
   seqList <- mon$aggregate(seqQry)
   updateSelectizeInput(session, "Sequence", choices = c(seqList["_id"]), 
@@ -150,7 +161,9 @@ server <- function(input, output, session) {
     str_vector <- input
     str_json   <- paste0("\"",paste0(unlist(str_vector),collapse= "\",\""),"\"")
     qry <- paste0('{"Sequence":{"$in" : [',str_json,']}}')
-    x<-mon$find(query = qry)
+    x <- mon$find(query = qry, fields = '{"Position" : 0}')
+    # x <- x[!duplicated(x[,c("EntryName", "Position_List","Entry")]), ]
+    x <- unique(x[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
     return(x)
   }
   filtered_data <- eventReactive(input$search, valueExpr = query_db(input$Sequence))
@@ -333,7 +346,11 @@ server <- function(input, output, session) {
       #### Merge new column
       observeEvent(input$update2,{
         newData1 <- reactiveData()
-        newData1 <- merge(newData, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+        if(!exists("newData")){
+          newData1 <- merge(dfk, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+        }else{
+          newData1 <- merge(newData, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+          }
         newData1 <<- newData1
         reactiveData(newData1)
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
@@ -364,40 +381,25 @@ server <- function(input, output, session) {
   }, server = FALSE)
   
   observeEvent(input$select_input,{
-    if(input$select_input == "row"){
-      shinyjs::hide("file2")
-      shinyjs::hide("update2")
-      shinyjs::hide("disp2")
-      shinyjs::hide("addColumn")
-      shinyjs::hide("nameColumn")
-      shinyjs::hide("contents2")
-      shinyjs::hide("columnTemplate")
-      shinyjs::show("file1")
-      shinyjs::show("update")
-      shinyjs::show("disp1")
-      shinyjs::show("contents")
-      shinyjs::show("rowsTemplate")
+    if(input$select_input == "Row"){
+      shinyjs::hide("columnID")
+      shinyjs::show("rowID")
     }else{
-      shinyjs::hide("file1")
-      shinyjs::hide("update")
-      shinyjs::hide("disp1")
-      shinyjs::hide("contents")
-      shinyjs::hide("rowsTemplate")
-      shinyjs::show("file2")
-      shinyjs::show("update2")
-      shinyjs::show("disp2")
-      shinyjs::show("addColumn")
-      shinyjs::show("nameColumn")
-      shinyjs::show("contents2")
-      shinyjs::show("columnTemplate")
+      shinyjs::hide("rowID")
+      shinyjs::show("columnID")
+      
     }
     
   })
   
+  exists.m <- function(x) {
+    all(sapply(x, exists))
+  }
+  
   adcolumn <- reactive({
     if(is.null(input$addColumn)){
       dfNew <- dfk
-    }else if(!is.null(input$addColumn)){
+    }else if(exists("newData1")){
       dfNew <- newData1
     }else{
       dfNew <- newData
@@ -405,12 +407,13 @@ server <- function(input, output, session) {
     return(dfNew)
   })
   
+  
   output$rowsTemplate <- downloadHandler(
     filename = function() {
       paste0("rowsTemplate.csv")
     },
     content = function(file) {
-      if(!exists("newData")){
+      if(!exists("newData") & !exists("newData1")){
         write.csv(data.frame(matrix(ncol=ncol(filtered_data()),nrow=0, dimnames=list(NULL,names(filtered_data())))),file, row.names = FALSE)
       }else{
         write.csv(data.frame(matrix(ncol=ncol(adcolumn()),nrow=0, dimnames=list(NULL,names(adcolumn())))),file, row.names = FALSE)
