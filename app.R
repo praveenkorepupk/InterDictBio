@@ -268,9 +268,7 @@ server <- function(input, output, session) {
   
   
   url <- a(imageOutput("UniProt"),href="https://www.uniprot.org/id-mapping")
-  
   output$interDictUrl <- renderUI({
-    # tags$a(imageOutput("UniProt.png"),href="https://www.google.com")
     tags$a(
       href="https://www.uniprot.org/id-mapping", target="_blank",
       tags$img(src="uniprot_bg_2.png", 
