@@ -1,4 +1,4 @@
-## Inter
+## InterDictBio R Shiny Application Development
 
 library(shinydashboard)
 library(shiny)
@@ -40,13 +40,6 @@ idleTimer();"
 
 
 # # data.frame with credentials info
-# credentials <- data.frame(
-#   user = c("pk","1", "fanny", "victor", "benoit"),
-#   password = c("pk@123","1", "fanny", "victor", "benoit"),
-#   is_hashed_password = FALSE,
-#   stringsAsFactors = FALSE
-# )
-
 credentials <- data.frame(
   user = c("praveen", "puneet"), # mandatory
   password = c("pk@123", "ps@123"), # mandatory
@@ -110,16 +103,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                     tags$hr(),
                                     tags$div(id = 'placeholderAddRemFilt'),
                                     tags$div(id = 'placeholderFilter'),
-                                    uiOutput("interDictUrl"),
-                                    br(),
-                                    br(),
-                                    radioButtons("select_mathFunction", "Choose Math Function", 
-                                                 choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
-                                    selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
-                                    textInput("newcolumnname", "new column name"),
-                                    # numericInput("formula", "Multiply", min=0, max=1000, value=1),
-                                    actionButton("update3", "Create Math Column")
-                   ),
+                                    uiOutput("interDictUrl")),
                    
                    dashboardBody(
                      tags$style(HTML("
@@ -140,9 +124,14 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                          style="color: #333; margin-left:-700px; 
                                                                          background-color: #FFF; border-color: #333"))),
                                  tabPanel("Selected Data", br(),DT::dataTableOutput("data2"),
-                                          # downloadButton('downLoadFilter',"Download Template")
+                                          dashboardSidebar(width = 250,
+                                                           fluidRow(style = "padding: 40px 14px 5px 14px; margin: 5px 5px 5px 5px; ",
+                                                                    # custom column name
+                                                                    textInput(inputId = "nameColumn", "Enter Column Name"),
+                                                                    actionButton(inputId = "addColumn", "Create Column")))
                                  ),
                                  tabPanel("Dashboard", fluidRow(br(),
+                                                                dashboardSidebar(width = 250),
                                                                 valueBoxOutput("value1", width = 3)
                                                                 ,valueBoxOutput("value2", width = 3)
                                                                 ,valueBoxOutput("value3", width = 3)
@@ -167,10 +156,9 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    ))
                                  ),
                                  tabPanel(
-                                   # box(id="praveen", 
                                    "Admin",
                                    shinyjs::useShinyjs(),
-                                   # DT::dataTableOutput("mytable3"),
+                                   dashboardSidebar(width = 250),
                                    # add button to add column
                                    radioButtons("select_input", "Choose Row or Column", choices = c("Row", "Column")),
                                    box(id = "rowID",width = 12,
@@ -202,19 +190,13 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                 tableOutput("contents2"),
                                                 div(style = "margin: 15px 0px 0px 0px; width:100%;"),
                                                 downloadButton("columnTemplate", "Download column Template")),
-                                       
-                                       useShinyalert(),
-                                       fluidRow(style = "padding: 40px 14px 5px 14px;
-                                              margin: 5px 5px 5px 5px; ",
-                                                # custom column name
-                                                textInput(inputId = "nameColumn", "Enter Column Name"),
-                                                actionButton(inputId = "addColumn", "Create Column"))),
-                                   # radioButtons("select_mathFunction", "Choose Math Function", 
-                                   #              choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
-                                   # selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
-                                   # textInput("newcolumnname", "new column name"),
-                                   # # numericInput("formula", "Multiply", min=0, max=1000, value=1),
-                                   # actionButton("update3", "Create Math Column"),
+                                       useShinyalert()),
+                                   radioButtons("select_mathFunction", "Choose Math Function",
+                                                choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
+                                   selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
+                                   textInput("newcolumnname", "new column name"),
+                                   # numericInput("formula", "Multiply", min=0, max=1000, value=1),
+                                   actionButton("update3", "Create Math Column"),
                                    DT::DTOutput("data_tbl")
                                  )
                                  # )
@@ -351,7 +333,7 @@ server <- function(input, output, session) {
                 searching = TRUE,
                 colReorder = TRUE,
                 ordering = TRUE,
-                dom = "BfQlrtip",
+                dom = "pBfQlrti",
                 buttons =list(
                   I('colvis'), 'copy', 'print',
                   list(
