@@ -1,3 +1,5 @@
+## Inter
+
 library(shinydashboard)
 library(shiny)
 library(mongolite)
@@ -12,109 +14,230 @@ library(plotly)
 library(tidyr)
 library(shinyjs)
 library(shinyalert)
+library(shinyWidgets)
+library(ddpcr)
+library(shinymanager)
+library(scrypt)
 
-ui <- dashboardPage(
-  dashboardHeader(title = tags$a(tags$img(height = "25px",src="TitleAndTradeMark.png")),
-                  tags$li(class="dropdown",tags$a("Help", target="_blank")),
-                  tags$li(class="dropdown",tags$a("User", target="_blank")),
-                  tags$li(class="dropdown",tags$a("Exit", target="_blank"))),
-  
-  dashboardSidebar(width = 250,
-                   # textInput("Sequence", "Enter the Sequence:", ""),
-                   selectizeInput("Sequence", "Enter the Sequence:",
-                                  multiple = TRUE,
-                                  choices = NULL),
-                   column(12, actionButton("search", "Search"),align = "center")),
-  
-  dashboardBody(tabsetPanel(id = 'dataset',
-                            tabPanel("Table", DT::dataTableOutput("sampleData"),
-                                     shinyjs::useShinyjs(),
-                                     shinyjs::hidden(downloadButton("downloadData", "Download Selected Rows",
-                                                                    icon = icon("download"),
-                                                                    style="color: #333; background-color: #FFF; border-color: #333"))),
-                            tabPanel("Selected Data", DT::dataTableOutput("data2")),
-                            tabPanel("Dashboard", fluidRow(br(),
-                                                           valueBoxOutput("value1", width = 3)
-                                                           ,valueBoxOutput("value2", width = 3)
-                                                           ,valueBoxOutput("value3", width = 3)
-                                                           ,valueBoxOutput("value4", width = 3)
-                            ),
-                            fluidRow( 
-                              box(
-                                title = "Sequence Plot"
-                                ,status = "primary"
-                                ,solidHeader = TRUE 
-                                ,collapsible = TRUE 
-                                ,plotOutput("seqencePlot", height = "300px")
-                              ),
-                              box(
-                                title = "Summary Statistics", 
-                                status = "warning", 
-                                solidHeader = TRUE,
-                                width = 6,
-                                collapsible = TRUE,
-                                height = 360,
-                                verbatimTextOutput("summaryDset")
-                              ))
-                            ),
-                            tabPanel("Admin", 
-                                     # DT::dataTableOutput("mytable3"),
-                                     # add button to add column
-                                     radioButtons("select_input", "Choose Row or Column", choices = c("Row", "Column")),
-                                     box(id = "rowID",width = 12,
-                                         fluidRow(style = "padding: 5px 14px 5px 14px;
+inactivity <- "function idleTimer() {
+var t = setTimeout(logout, 120000);
+window.onmousemove = resetTimer; // catches mouse movements
+window.onmousedown = resetTimer; // catches mouse movements
+window.onclick = resetTimer;     // catches mouse clicks
+window.onscroll = resetTimer;    // catches scrolling
+window.onkeypress = resetTimer;  //catches keyboard actions
+
+function logout() {
+window.close();  //close the window
+}
+
+function resetTimer() {
+clearTimeout(t);
+t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
+}
+}
+idleTimer();"
+
+
+# # data.frame with credentials info
+# credentials <- data.frame(
+#   user = c("pk","1", "fanny", "victor", "benoit"),
+#   password = c("pk@123","1", "fanny", "victor", "benoit"),
+#   is_hashed_password = FALSE,
+#   stringsAsFactors = FALSE
+# )
+
+credentials <- data.frame(
+  user = c("praveen", "puneet"), # mandatory
+  password = c("pk@123", "ps@123"), # mandatory
+  start = c("2015-04-15"), # optinal (all others)
+  expire = c(NA, "2032-12-31"),
+  admin = c(FALSE, TRUE),
+  comment = "Simple and secure authentification mechanism 
+  for single 'Shiny' applications.",
+  stringsAsFactors = FALSE,
+  moreInfo = c("someData1", "someData2"),
+  level = c(2, 0)
+)
+
+css <- HTML(".btn-primary {
+                  color: #ffffff;
+                  background-color: #0dc5c1;
+                  border-color: #0dc5c1;
+              }
+              .panel-primary {
+                  border-color: #0dc5c1;
+              }")
+
+# In global.R for example:
+set_labels(
+  language = "en",
+  "Please authenticate" = "Please Login",
+  "Username:" = "Username:",
+  "Password:" = "Password:"
+)
+
+ui <- secure_app(head_auth = tags$script(inactivity),
+                 theme = shinythemes::shinytheme("united"),
+                 tags_top = tags$div(
+                   tags$head(tags$style(css)),
+                   tags$img(
+                     src = "output-onlinepngtools.png", width = 200, height = 30, alt="Logo not found", deleteFile=FALSE
+                   )),
+                 dashboardPage(
+                   dashboardHeader(title = tags$a(tags$img(height = "25px",src="output-onlinepngtools.png")),
+                                   tags$li(class="dropdown",tags$a("Help", target="_blank")),
+                                   tags$li(class="dropdown",tags$a("User", target="_blank")),
+                                   tags$li(class="dropdown",tags$a("Exit", target="_blank"))),
+                   
+                   dashboardSidebar(width = 250,
+                                    selectizeInput("Sequence", "Enter the Sequence:",
+                                                   multiple = TRUE,
+                                                   choices = NULL),
+                                    column(12, actionButton("search", "Filter Data",width='50%',
+                                                            icon = icon("search"),
+                                                            style='padding:4px; font-size:150%,style="text-align:left;"')
+                                           ,align = "left"),
+                                    fluidRow(
+                                      column(12, br(),
+                                             textOutput("rendertext"),
+                                             actionButton('addFilter', 'Add Filter',width='50%', 
+                                                          icon = icon("plus-circle"),
+                                                          style='padding:4px; font-size:150%,style="text-align:left;"'),
+                                             align = "left"),
+                                      
+                                    ),
+                                    tags$hr(),
+                                    tags$div(id = 'placeholderAddRemFilt'),
+                                    tags$div(id = 'placeholderFilter'),
+                                    uiOutput("interDictUrl"),
+                                    br(),
+                                    br(),
+                                    radioButtons("select_mathFunction", "Choose Math Function", 
+                                                 choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
+                                    selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
+                                    textInput("newcolumnname", "new column name"),
+                                    # numericInput("formula", "Multiply", min=0, max=1000, value=1),
+                                    actionButton("update3", "Create Math Column")
+                   ),
+                   
+                   dashboardBody(
+                     tags$style(HTML("
+    .tabbable > .nav > li > a[data-value='Table'] {background-color: #847c8a;   color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Selected Data'] {background-color: #847c8a;  color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Dashboard'] {background-color: #847c8a; color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Admin'] {background-color: #847c8a; color:white; font-size: 16px;}
+    .tabbable > .nav > li[class=active]    > a {background-color: #0dc5c1; color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
+
+  ")),
+                     tabsetPanel(id = 'dataset',
+                                 tabPanel("Table", br(), DT::dataTableOutput("sampleData"),
+                                          column(DT::dataTableOutput("tempdt"), width = 6),
+                                          DT::dataTableOutput("data"),
+                                          shinyjs::useShinyjs(),
+                                          shinyjs::hidden(downloadButton("downloadData", "Download Selected Rows",
+                                                                         icon = icon("download"),
+                                                                         style="color: #333; margin-left:-700px; 
+                                                                         background-color: #FFF; border-color: #333"))),
+                                 tabPanel("Selected Data", br(),DT::dataTableOutput("data2"),
+                                          # downloadButton('downLoadFilter',"Download Template")
+                                 ),
+                                 tabPanel("Dashboard", fluidRow(br(),
+                                                                valueBoxOutput("value1", width = 3)
+                                                                ,valueBoxOutput("value2", width = 3)
+                                                                ,valueBoxOutput("value3", width = 3)
+                                                                ,valueBoxOutput("value4", width = 3)
+                                 ),
+                                 fluidRow( 
+                                   box(
+                                     title = "Sequence Plot"
+                                     ,status = "primary"
+                                     ,solidHeader = TRUE 
+                                     ,collapsible = TRUE 
+                                     ,plotOutput("seqencePlot", height = "300px")
+                                   ),
+                                   box(
+                                     title = "Summary Statistics", 
+                                     status = "warning", 
+                                     solidHeader = TRUE,
+                                     width = 6,
+                                     collapsible = TRUE,
+                                     height = 360,
+                                     verbatimTextOutput("summaryDset")
+                                   ))
+                                 ),
+                                 tabPanel(
+                                   # box(id="praveen", 
+                                   "Admin",
+                                   shinyjs::useShinyjs(),
+                                   # DT::dataTableOutput("mytable3"),
+                                   # add button to add column
+                                   radioButtons("select_input", "Choose Row or Column", choices = c("Row", "Column")),
+                                   box(id = "rowID",width = 12,
+                                       fluidRow(style = "padding: 5px 14px 5px 14px;
                                               margin: 5px 5px 5px 5px; ",                                         
-                                     fileInput("file1", "Upload CSV To Add Rows",
-                                               accept = c(
-                                                 "text/csv",
-                                                 "text/comma-separated-values,text/plain",
-                                                 ".csv")),
-                                     actionButton("update", "Combine Rows"),
-                                     actionButton("disp1", "Display"),
-                                     tableOutput("contents"),
-                                     fluidRow(style = "padding:5px 15px 5px 5px; margin: 15px 0px 0px 0px;",
-                                     downloadButton("rowsTemplate", "Download Template")))),
-                                     
-                                     box(id = "columnID", width = 12,
-                                     fluidRow(style = "padding: 5px 14px 5px 14px;
+                                                fileInput("file1", "Upload CSV To Add Rows",
+                                                          accept = c(
+                                                            "text/csv",
+                                                            "text/comma-separated-values,text/plain",
+                                                            ".csv")),
+                                                actionButton("update", "Combine Rows"),
+                                                actionButton("disp1", "Display"),
+                                                tableOutput("contents"),
+                                                fluidRow(style = "padding:5px 15px 5px 5px; margin: 15px 0px 0px 0px;",
+                                                         # downloadButton("rowsTemplate", "Download Template"),
+                                                         downloadButton('downLoadFilter',"Download Template")))),
+                                   
+                                   box(id = "columnID", width = 12,
+                                       fluidRow(style = "padding: 5px 14px 5px 14px;
                                           margin: 5px 5px 5px 5px; ",                                         
-                                     fileInput("file2", "Upload CSV To Add Columns",
-                                               accept = c(
-                                                 "text/csv",
-                                                 "text/comma-separated-values,text/plain",
-                                                 ".csv")),
-                                     actionButton("update2", "Combine Columns"),
-                                     actionButton("disp2", "Display"),
-                                     tableOutput("contents2"),
-                                     div(style = "margin: 15px 0px 0px 0px; width:100%;"),
-                                     downloadButton("columnTemplate", "Download column Template")),
-                                     
-                                     useShinyalert(),
-                                     fluidRow(style = "padding: 40px 14px 5px 14px;
+                                                fileInput("file2", "Upload CSV To Add Columns",
+                                                          accept = c(
+                                                            "text/csv",
+                                                            "text/comma-separated-values,text/plain",
+                                                            ".csv")),
+                                                useShinyalert(),
+                                                actionButton("update2", "Combine Columns"),
+                                                actionButton("disp2", "Display"),
+                                                tableOutput("contents2"),
+                                                div(style = "margin: 15px 0px 0px 0px; width:100%;"),
+                                                downloadButton("columnTemplate", "Download column Template")),
+                                       
+                                       useShinyalert(),
+                                       fluidRow(style = "padding: 40px 14px 5px 14px;
                                               margin: 5px 5px 5px 5px; ",
-                                       # custom column name
-                                       textInput(inputId = "nameColumn", "Enter Column Name"),
-                                       actionButton(inputId = "addColumn", "Create Column"))),
-                            )
-  ),tags$head(tags$style(HTML('
+                                                # custom column name
+                                                textInput(inputId = "nameColumn", "Enter Column Name"),
+                                                actionButton(inputId = "addColumn", "Create Column"))),
+                                   # radioButtons("select_mathFunction", "Choose Math Function", 
+                                   #              choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
+                                   # selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
+                                   # textInput("newcolumnname", "new column name"),
+                                   # # numericInput("formula", "Multiply", min=0, max=1000, value=1),
+                                   # actionButton("update3", "Create Math Column"),
+                                   DT::DTOutput("data_tbl")
+                                 )
+                                 # )
+                     )
+                   ),tags$head(tags$style(HTML('
         /* logo */
         .skin-blue .main-header .logo {
-                              background-color: #D9D9D9;
+                              background-color: #0dc5c1;
                               }
 
         /* logo when hovered */
         .skin-blue .main-header .logo:hover {
-                              background-color: #D9D9D9;
+                              background-color: #0dc5c1;
                               }
 
         /* navbar (rest of the header) */
         .skin-blue .main-header .navbar {
-                              background-color: #D9D9D9;
+                              background-color: #0dc5c1;
                               }        
 
         /* main sidebar */
         .skin-blue .main-sidebar {
-                              background-color: #D9D9D9;
+                              background-color: #000000;
                               }
 
         /* active selected tab in the sidebarmenu */
@@ -136,17 +259,63 @@ ui <- dashboardPage(
          .skin-blue .main-header .navbar .sidebar-toggle:hover{
                               background-color: #283747;
                               }
-                              ')))
-  )
-)
+                              '))
+                   )
+                 ))
 
 server <- function(input, output, session) {
-  mon <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
   
+  # result_auth <- secure_server(check_credentials = check_credentials(credentials))
+  res_auth <- secure_server(check_credentials = check_credentials(credentials))
+  
+  # Create reactive values including all credentials
+  creds_reactive <- reactive({
+    reactiveValuesToList(res_auth)
+  })
+  
+  # Hide extraOutput only when condition is TRUE
+  observe({
+    if (!is.null(creds_reactive()$level) && creds_reactive()$level > 0){
+      hideTab("dataset", "Admin")
+      # shinyjs::hide("praveen")
+    }else{
+      showTab("dataset", "Admin")
+      # shinyjs::show("praveen")  
+    }
+  })
+  
+  
+  # url <- a("ID-Mapping", href="https://www.uniprot.org/id-mapping", target="_blank")
+  url <- a(imageOutput("UniProt"),href="https://www.uniprot.org/id-mapping")
+  
+  output$interDictUrl <- renderUI({
+    # tags$a(imageOutput("UniProt.png"),href="https://www.google.com")
+    tags$a(
+      href="https://www.uniprot.org/id-mapping", target="_blank",
+      tags$img(src="uniprot_bg_2.png", 
+               title="UniProd ID-Mapping", 
+               width="180",
+               height="60")
+    )
+    
+    # tagList("", url,
+    #         tags$div(
+    #           tags$style("#interDictUrl
+    #         {
+    #         font-size: 25px;font-style: normal;font-weight: bold;text-align:center;
+    #                    }")
+    #         ))
+  })
+  
+  output$rendertext <- renderText({
+    "To find unique entries for different sequences please click below button"
+  })
+  
+  mon <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
   output$sampleData <- renderDataTable(server = TRUE,{
     df100 <- as.data.frame(mon$aggregate('[{"$limit": 1000}]'))
     df100 <- unique(df100[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
-    datatable(df100)
+    dTable(df100)
   })
   
   seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":2000}]'
@@ -170,75 +339,130 @@ server <- function(input, output, session) {
   
   #Function for customize data table which contains custom search builder
   dTable <- function(df){
-    datatable(df,selection = 'multiple', editable = TRUE,
+    datatable(df,selection = 'multiple', editable = TRUE,rownames = FALSE, class = 'cell-border stripe',
               extensions = c("SearchBuilder","Buttons",'ColReorder'), #'Select'
-              options = list(scrollX = TRUE,
-                             search = list(regex = TRUE),
-                             searching = TRUE,
-                             # select = TRUE,
-                             colReorder = TRUE,
-                             ordering = TRUE,
-                             dom = "BfQlrtip",
-                             buttons =list(
-                               I('colvis'), 'copy', 'print',
-                               list(
-                                 extend = 'collection',
-                                 buttons = list(
-                                   list(extend = "csv", filename = "page",exportOptions = list(
-                                     columns = ":visible",modifier = list(page = "current"))
-                                   ),
-                                   list(extend = 'excel', filename = "page", title = NULL,
-                                        exportOptions = list(columns = ":visible",modifier = list(page = "current")))),
-                                 text = 'Download current page'),
-                               list(
-                                 extend = 'collection',
-                                 buttons = list(
-                                   list(extend = "csv", filename = "data",exportOptions = list(
-                                     columns = ":visible",modifier = list(page = "all"))
-                                   ),
-                                   list(extend = 'excel', filename = "data", title = NULL,
-                                        exportOptions = list(columns = ":visible",modifier = list(page = "all")))),
-                                 text = 'Download all data')
-                               
-                             ),
-                             searchBuilder = list(
-                               conditions = list(
-                                 string = list(
-                                   regex = list(
-                                     conditionName = "matches regex",
-                                     init = JS(
-                                       "function (that, fn, preDefined = null) {",
-                                       "  var el =  $('<input/>').on('input', function() { fn(that, this) });",
-                                       "  if (preDefined !== null) {",
-                                       "     $(el).val(preDefined[0]);",
-                                       "  }",
-                                       "  return el;",
-                                       "}"
-                                     ),
-                                     inputValue = JS(
-                                       "function (el) {",
-                                       "  return $(el[0]).val();",
-                                       "}"
-                                     ),
-                                     isInputValid = JS(
-                                       "function (el, that) {",
-                                       "  return $(el[0]).val().length !== 0;",
-                                       "}"
-                                     ),
-                                     search = JS(
-                                       "function (value, regex) {",
-                                       "  var reg = new RegExp(regex, 'g');",
-                                       "  return reg.test(value);",
-                                       "}"
-                                     )
-                                   )
-                                 )
-                               )
-                             )
+              options = list(  initComplete = JS(
+                "function(settings, json) {",
+                "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                "}"),
+                columnDefs = list(list(className = 'dt-left', targets = "_all")),
+                scrollX = TRUE,
+                search = list(regex = TRUE),
+                searching = TRUE,
+                colReorder = TRUE,
+                ordering = TRUE,
+                dom = "BfQlrtip",
+                buttons =list(
+                  I('colvis'), 'copy', 'print',
+                  list(
+                    extend = 'collection',
+                    buttons = list(
+                      list(extend = "csv", filename = "page",exportOptions = list(
+                        columns = ":visible",modifier = list(page = "current"))
+                      ),
+                      list(extend = 'excel', filename = "page", title = NULL,
+                           exportOptions = list(columns = ":visible",modifier = list(page = "current")))),
+                    text = 'Download current page'),
+                  list(
+                    extend = 'collection',
+                    buttons = list(
+                      list(extend = "csv", filename = "data",exportOptions = list(
+                        columns = ":visible",modifier = list(page = "all"))
+                      ),
+                      list(extend = 'excel', filename = "data", title = NULL,
+                           exportOptions = list(columns = ":visible",modifier = list(page = "all")))),
+                    text = 'Download all data')
+                  
+                ),
+                searchBuilder = list(
+                  conditions = list(
+                    string = list(
+                      regex = list(
+                        conditionName = "matches regex",
+                        init = JS(
+                          "function (that, fn, preDefined = null) {",
+                          "  var el =  $('<input/>').on('input', function() { fn(that, this) });",
+                          "  if (preDefined !== null) {",
+                          "     $(el).val(preDefined[0]);",
+                          "  }",
+                          "  return el;",
+                          "}"
+                        ),
+                        inputValue = JS(
+                          "function (el) {",
+                          "  return $(el[0]).val();",
+                          "}"
+                        ),
+                        isInputValid = JS(
+                          "function (el, that) {",
+                          "  return $(el[0]).val().length !== 0;",
+                          "}"
+                        ),
+                        search = JS(
+                          "function (value, regex) {",
+                          "  var reg = new RegExp(regex, 'g');",
+                          "  return reg.test(value);",
+                          "}"
+                        )
+                      )
+                    )
+                  )
+                )
               )
     )
   }
   
+  dTable2 <- function(df){
+    datatable(df,selection = 'multiple', editable = TRUE,rownames = FALSE, class = 'cell-border stripe',
+              extensions = c("SearchBuilder","Buttons",'ColReorder'), #'Select'
+              options = list(  initComplete = JS(
+                "function(settings, json) {",
+                "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                "}"),
+                columnDefs = list(list(className = 'dt-left', targets = "_all")),
+                scrollX = TRUE,
+                search = list(regex = TRUE),
+                searching = TRUE,
+                colReorder = TRUE,
+                ordering = TRUE,
+                dom = "fQlrtip",
+                searchBuilder = list(
+                  conditions = list(
+                    string = list(
+                      regex = list(
+                        conditionName = "matches regex",
+                        init = JS(
+                          "function (that, fn, preDefined = null) {",
+                          "  var el =  $('<input/>').on('input', function() { fn(that, this) });",
+                          "  if (preDefined !== null) {",
+                          "     $(el).val(preDefined[0]);",
+                          "  }",
+                          "  return el;",
+                          "}"
+                        ),
+                        inputValue = JS(
+                          "function (el) {",
+                          "  return $(el[0]).val();",
+                          "}"
+                        ),
+                        isInputValid = JS(
+                          "function (el, that) {",
+                          "  return $(el[0]).val().length !== 0;",
+                          "}"
+                        ),
+                        search = JS(
+                          "function (value, regex) {",
+                          "  var reg = new RegExp(regex, 'g');",
+                          "  return reg.test(value);",
+                          "}"
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+    )
+  }  
   ################################################################   
   ##################### Main TabPanel  ########################### 
   ################################################################   
@@ -252,12 +476,12 @@ server <- function(input, output, session) {
     reactiveData(data())
   })
   
-  proxy = dataTableProxy('sampleData')
-  
+  proxy <- dataTableProxy('sampleData')
   observeEvent(input$search,{
     replaceData(proxy, reactiveData(), resetPaging = TRUE)
     output$sampleData <- renderDataTable(server = FALSE,{
       dataSet <- reactiveData()
+      # names(dataSet)[names(dataSet) == 'Position_List'] <- 'Position'
       
       output$downloadData <- downloadHandler(
         filename = function() {
@@ -278,6 +502,89 @@ server <- function(input, output, session) {
     },class = "display")
     
   }
+  )
+  
+  dff <- eventReactive(input$addFilter,{
+    datac <- filtered_data()
+    datac <-  datac %>%
+      group_by(EntryName) %>%
+      filter(n_distinct(Sequence) > 1) %>%
+      ungroup
+  })
+  
+  filter <- character(0)
+  makeReactiveBinding("aggregFilterObserver")
+  aggregFilterObserver <- list()
+  observeEvent(input$addFilter, {
+    add <- input$addFilter
+    filterId <- paste0('Filter_', add)
+    colfilterId <- paste0('Col_Filter_', add)
+    rowfilterId <- paste0('Row_Filter_', add)
+    removeFilterId <- paste0('Remove_Filter_', add)
+    insertUI(
+      selector = '#placeholderFilter',where = "afterEnd",
+      ui = tags$div(id = filterId,
+                    fluidRow(
+                      column(12, 
+                             actionButton(removeFilterId, label = "Delete Filter",width='50%', icon = icon("minus-circle"),
+                                          style = 'padding:4px; font-size:150%,style="text-align:left;"')),align = "center"),
+                    selectInput(colfilterId, label = "Select Variable", choices = c("EntryName"), selected = NULL),
+                    # selectizeInput(rowfilterId, label = "Select Variable Values",
+                    #                choices = NULL, selected = NULL, 
+                    #                width = 4000,
+                    #                multiple = TRUE),
+                    pickerInput(rowfilterId, label = "Select Variable Values", 
+                                choices=NULL, selected = NULL,  multiple = TRUE,
+                                choicesOpt = NULL,  width = 220)
+      ),
+      multiple = TRUE)
+    
+    observeEvent(input[[colfilterId]], {
+      DF <<-  dff()
+      col <- input[[colfilterId]]
+      values <<- as.list(unique(DF[col]))[[1]]
+      
+      # updateSelectizeInput(session, rowfilterId , label = "Select Variable Values", choices = values)
+      updatePickerInput(session, rowfilterId , label = "Select Variable Values", choices = values, selected = values,
+                        options = list('actions-box' = TRUE))
+      
+      aggregFilterObserver[[filterId]]$col <<- col
+      aggregFilterObserver[[filterId]]$rows <<- NULL
+    })
+    
+    observeEvent(input[[rowfilterId]], {
+      rows <- input[[rowfilterId]]
+      aggregFilterObserver[[filterId]]$rows <<- rows
+    })
+    
+    observeEvent(input[[removeFilterId]], {
+      removeUI(selector = paste0('#', filterId))
+      aggregFilterObserver[[filterId]] <<- NULL
+      
+    })
+  })
+  
+  
+  output$data <- renderDataTable(server = FALSE,{
+    dataF <- dff()
+    invisible(lapply(aggregFilterObserver, function(filter){
+      mydata <<- dataF[which((dataF[[filter$col]] %in% filter$rows)),]
+    }))
+    dTable2(mydata)
+  },class = "display"
+  )
+  
+  output$tempdt <- renderDataTable(server = FALSE,{
+    tempdataF <- dff()
+    invisible(lapply(aggregFilterObserver, function(filter){
+      tempmydata <- tempdataF[which((tempdataF[[filter$col]] %in% filter$rows)),]
+      tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
+      tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence', 'Count')))
+      tempmydata <<- tempmydata[,c('EntryName', 'Sequence')] %>% group_by(EntryName) %>% 
+        summarise_all(funs(paste(na.omit(.), collapse = ",")))
+    }))
+    datatable(tempmydata)
+  },class = "display"
   )
   
   ################################################################   
@@ -313,12 +620,11 @@ server <- function(input, output, session) {
     if(length(dataSet1)){
       dfk <- dataSet1[sel, ]
       dfk <- dfk %>% separate_rows(Position_List, sep = ",")
+      names(dfk)[names(dfk) == 'Position_List'] <- 'Position'
       
       mytable = reactive({dfk})
-      
       # set up reactive value
       reactiveData = reactiveVal()
-      
       # observe data
       observeEvent(mytable(),{
         reactiveData(mytable())
@@ -345,20 +651,134 @@ server <- function(input, output, session) {
       
       #### Merge new column
       observeEvent(input$update2,{
-        newData1 <- reactiveData()
+        newData <- reactiveData()
+        get_common_cols <- function(df1, df2)  intersect(names(df1), names(df2))
         if(!exists("newData")){
-          newData1 <- merge(dfk, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+          matchedCols <- get_common_cols(y(), dfk)
         }else{
-          newData1 <- merge(newData, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+          matchedCols <- get_common_cols(y(), newData)
+        }
+        print(length(matchedCols) == length(names(y())))
+        mcols <- c("Sequence","Entry","Position")
+        mcolchars <<- setdiff(matchedCols,mcols)
+        
+        if(length(matchedCols) == length(names(y()))){
+          # shinyalert(
+          #   html = TRUE,
+          #   text = tagList(
+          #     "Please check your data, All the columns are already available",
+          #     # textOutput("collist", inline = TRUE)
+          #   )
+          # )
+          
+          shinyalert(
+            title = "Please check your data",
+            callbackR = mycallback,
+            text = "All the columns are already Exist",
+            type = "warning",
+            showCancelButton = TRUE,
+            showConfirmButton = TRUE,
+            confirmButtonCol = '#DD6B55',
+            confirmButtonText = "Merge",
+            cancelButtonText = "OverWrite",
+            animation = TRUE,
+          )
+          # output$collist <- renderText({print("All the columns are already exists")})
+        }else{
+          if(!exists("newData")){
+            newData <- merge(dfk, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
+          }else{
+            newData <- merge(newData, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
           }
-        newData1 <<- newData1
-        reactiveData(newData1)
+          newData <<- newData
+          reactiveData(newData)
+          replaceData(proxy, reactiveData(), resetPaging = FALSE)
+          output$data2 = renderDataTable({
+            dTable(reactiveData())
+            # fdf <- reactiveData()
+            # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
+            # dTable(fdf)
+          })
+        }
+        
+        # if(valShinyAlert == TRUE){
+        # if(!exists("newData")){
+        #   newData <- merge(dfk, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+        # }else{
+        #   newData <- merge(newData, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
+        # }
+        # }
+        # newData <<- newData
+        # reactiveData(newData)
+        # replaceData(proxy, reactiveData(), resetPaging = FALSE)
+        # output$data2 = renderDataTable({
+        #   dTable(reactiveData())
+        # })
+      })
+      
+      mycallback <- function(value) {
+        # valShinyAlert <- value
+        if(value == TRUE){
+          if(!exists("newData")){
+            newData <- merge(dfk, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
+            indx <<- grepl(mcolchars, colnames(newData))
+            lss <<- names(newData[indx])
+            newData[mcolchars] <- paste(newData[[lss[1]]],newData[[lss[2]]],sep=",")
+            dropList <<- lss
+            newData <- newData[, !colnames(newData) %in% dropList]
+          }else{
+            newData <- merge(newData, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
+            indx <<- grepl(mcolchars, colnames(newData))
+            lss <<- names(newData[indx])
+            newData[mcolchars] <- paste(newData[[lss[1]]],newData[[lss[2]]],sep=",")
+            dropList <<- lss
+            newData <- newData[, !colnames(newData) %in% dropList]
+            # newData <<- merge_dfs_overwrite_col(y(), newData, c("Count"), c("Sequence","Entry","Position_List"))
+          }
+        }else if(value == FALSE){
+          if(!exists("newData")){
+            # newData <- anti_join(dfk, y(), by = c("Sequence","Entry","Position_List")) %>% bind_rows(y())
+            # newData <- within(merge(dfk, y(), by=c("Sequence","Entry","Position_List"),all.x = TRUE), 
+            #        {paste(mcolchars) <- ifelse(is.na(paste(mcolchars,".x", sep="")),paste(mcolchars,".y", sep=""),paste(mcolchars,".x", sep="")); paste(mcolchars,".x", sep="") <- NULL; paste(mcolchars,".y", sep="") <- NULL})
+            newData <- merge(x = dfk, y = y(), by = c("Sequence","Entry","Position"), all = T)
+            char <- paste0(mcolchars)
+            char1 <- paste0(mcolchars, ".x", "")
+            char2 <- paste0(mcolchars, ".y", "")
+            newData[char1][!is.na(newData[char2])] <- newData[char2][!is.na(newData[char2])]
+            newData[char] <- newData[char1]
+            dropList2 <<- c(char1, char2)
+            newData <- newData[, !colnames(newData) %in% dropList2]
+            
+          }else{
+            # newData <- anti_join(newData, y(), by = c("Sequence","Entry","Position_List")) %>% bind_rows(y())
+            # newData2 <- within(merge(newData, y(), by=c("Sequence","Entry","Position_List"),all.x = TRUE), 
+            #        {paste(mcolchars) <- ifelse(is.na(paste(mcolchars,".x", sep="")),paste(mcolchars,".y", sep=""),paste(mcolchars,".x", sep="")); paste(mcolchars,".x", sep="") <- NULL; paste(mcolchars,".y", sep="") <- NULL})
+            newData <- merge(x = newData, y = y(), by = c("Sequence","Entry","Position"), all = T)
+            char <- paste0(mcolchars)
+            char1 <- paste0(mcolchars, ".x", "")
+            char2 <- paste0(mcolchars, ".y", "")
+            newData[char1][!is.na(newData[char2])] <- newData[char2][!is.na(newData[char2])]
+            newData[char] <- newData[char1]
+            dropList2 <<- c(char1, char2)
+            newData <- newData[, !colnames(newData) %in% dropList2]
+            
+          }
+          
+        }
+        
+        
+        newData <<- newData
+        reactiveData(newData)
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
         output$data2 = renderDataTable({
-          # datatable(reactiveData())
           dTable(reactiveData())
+          # fdf <- reactiveData()
+          # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
+          # dTable(fdf)
         })
-      })
+        
+      }
+      
       
       # add a column
       observeEvent(input$addColumn,{
@@ -373,9 +793,125 @@ server <- function(input, output, session) {
           replaceData(proxy, reactiveData(), resetPaging = FALSE)
           output$data2 = renderDataTable({
             dTable(reactiveData())
+            # fdf <- reactiveData()
+            # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
+            # dTable(fdf)
           })
         }
       })
+      
+      output$downLoadFilter <- downloadHandler(
+        filename = function() {
+          paste('Filtered data-', Sys.Date(), '.csv', sep = '')
+        },
+        content = function(file){
+          if(!exists("newData")){
+            write.csv(data.frame(matrix(ncol=ncol(dfk),nrow=0, dimnames=list(NULL,names(dfk)))),file, row.names = FALSE)
+          }else{
+            write.csv(data.frame(matrix(ncol=ncol(newData),nrow=0, dimnames=list(NULL,names(newData)))),file, row.names = FALSE)
+          }
+        }
+      )
+      
+      observeEvent(input$select_mathFunction,{
+        if(!exists("newData")){
+          dtf <- dfk
+          numcolslist <<- names(dtf)[sapply(dtf, is.numeric)]
+          updateSelectizeInput(session, "numeric_cols", choices = numcolslist)
+          
+        }else{
+          dtf <- newData
+          numcolslist <<- names(dtf)[sapply(dtf, is.numeric)]
+          updateSelectizeInput(session, "numeric_cols", choices = numcolslist)
+        }
+        
+      })
+      
+      reactive_dt <- eventReactive(input$update3, {
+        if(input$select_mathFunction == "Arithmetic Mean"){
+          if(!exists("newData")){
+            dtf <- dfk
+          }else{
+            dtf <- newData
+          }
+          if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
+            # newcolval <- dtf$Count*as.numeric(input$formula)
+            # numcolnameslist <<- input$numeric_cols
+            # newcolval <- dtf[input$numeric_cols]*as.numeric(input$formula)
+            # print(input$numeric_cols)
+            # newcolval <- dtf[input$numeric_cols[[1]]]*dtf[input$numeric_cols[[2]]]
+            newcolval <- rowMeans(dtf[,input$numeric_cols], na.rm=TRUE)
+            newcol <- data.frame(newcolval)
+            names(newcol) <- input$newcolumnname
+            newData <<- cbind(dtf,newcol)
+          }
+          newData
+        }else if(input$select_mathFunction == "Geometric Mean"){
+          if(!exists("newData")){
+            dtf <- dfk
+          }else{
+            dtf <- newData
+          }
+          if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
+            # newcolval <- dtf$Count*as.numeric(input$formula)
+            # numcolnameslist <<- input$numeric_cols
+            # newcolval <- dtf[input$numeric_cols]*as.numeric(input$formula)
+            # print(input$numeric_cols)
+            # newcolval <- dtf[input$numeric_cols[[1]]]*dtf[input$numeric_cols[[2]]]
+            # newcolval <- prod(dtf[,input$numeric_cols], na.rm=TRUE)
+            # newcolval <- apply(dtf[,input$numeric_cols],1,prod)
+            newcolval <- exp(rowMeans(log(dtf[,input$numeric_cols]), na.rm=TRUE))
+            newcol <- data.frame(newcolval)
+            names(newcol) <- input$newcolumnname
+            newData <<- cbind(dtf,newcol)
+          }
+          newData
+        }else if(input$select_mathFunction == "Addition"){
+          if(!exists("newData")){
+            dtf <- dfk
+          }else{
+            dtf <- newData
+          }
+          if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
+            # newcolval <- dtf$Count*as.numeric(input$formula)
+            # numcolnameslist <<- input$numeric_cols
+            # newcolval <- dtf[input$numeric_cols]*as.numeric(input$formula)
+            # print(input$numeric_cols)
+            # newcolval <- dtf[input$numeric_cols[[1]]]+dtf[input$numeric_cols[[2]]]
+            # newcolval <- sum(dtf[,input$numeric_cols], na.rm=TRUE)
+            newcolval <- apply(dtf[,input$numeric_cols],1,sum)
+            newcol <- data.frame(newcolval)
+            names(newcol) <- input$newcolumnname
+            newData <<- cbind(dtf,newcol)
+          }
+          newData
+        }
+        
+        
+      })      
+      # output$data_tbl <- DT::renderDT({reactive_dt()})
+      
+      
+      mytable2 = reactive({reactive_dt()})
+      # set up reactive value
+      reactiveData = reactiveVal()
+      # observe data
+      observeEvent(mytable2(),{
+        reactiveData(mytable2())
+      })
+      proxy = dataTableProxy('data2')
+      observeEvent(input$update3,{
+        newData <- reactiveData()
+        reactiveData(newData)
+        replaceData(proxy, reactiveData(), resetPaging = FALSE)
+        output$data2 = renderDataTable({
+          dTable(reactiveData())
+          # fdf <- reactiveData()
+          # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
+          # dTable(fdf)
+        })
+      })
+      
       dTable(dfk)
     }
   }, server = FALSE)
@@ -387,7 +923,6 @@ server <- function(input, output, session) {
     }else{
       shinyjs::hide("rowID")
       shinyjs::show("columnID")
-      
     }
     
   })
@@ -400,7 +935,7 @@ server <- function(input, output, session) {
     if(is.null(input$addColumn)){
       dfNew <- dfk
     }else if(exists("newData1")){
-      dfNew <- newData1
+      dfNew <- newData
     }else{
       dfNew <- newData
     }
@@ -421,14 +956,14 @@ server <- function(input, output, session) {
       
     }
   )
-
+  
   output$columnTemplate <- downloadHandler(
     filename = function() {
       paste0("columnsTemplate.csv")
     },
     content = function(file) {
       # Create a Vector with Columns
-      columns = c("Sequence","Entry","Position_List") 
+      columns = c("Sequence","Entry","Position") 
       #Create a Empty DataFrame with 0 rows and n columns
       df = data.frame(matrix(nrow = 0, ncol = length(columns))) 
       # Assign column names
@@ -491,6 +1026,9 @@ server <- function(input, output, session) {
     dataforSummary <- filtered_data()
     summary(dataforSummary) 
   })  
+  
+  
 }
+
 
 shinyApp(ui = ui, server = server)
