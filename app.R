@@ -641,9 +641,7 @@ server <- function(input, output, session) {
       dfk <- dataSet1[sel, ]
       dfk <- dfk %>% separate_rows(Position_List, sep = ",")
       names(dfk)[names(dfk) == 'Position_List'] <- 'Position'
-      dfg <- dfk
-      
-      
+      dfg <<- dfk
       
       mytable = reactive({dfk})
       # set up reactive value
