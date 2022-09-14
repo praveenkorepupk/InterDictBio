@@ -1,4 +1,4 @@
-## Inter
+## InterDictBio R Shiny Application Development
 
 library(shinydashboard)
 library(shiny)
@@ -18,6 +18,9 @@ library(shinyWidgets)
 library(ddpcr)
 library(shinymanager)
 library(scrypt)
+library(shinyBS)
+library(spsComps)
+
 
 inactivity <- "function idleTimer() {
 var t = setTimeout(logout, 120000);
@@ -39,17 +42,11 @@ t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
 idleTimer();"
 
 
-# # data.frame with credentials info
-# credentials <- data.frame(
-#   user = c("pk","1", "fanny", "victor", "benoit"),
-#   password = c("pk@123","1", "fanny", "victor", "benoit"),
-#   is_hashed_password = FALSE,
-#   stringsAsFactors = FALSE
-# )
 
+# # data.frame with credentials info
 credentials <- data.frame(
-  user = c("praveen", "puneet"), # mandatory
-  password = c("pk@123", "ps@123"), # mandatory
+  user = c("praveen", "pk"), # mandatory
+  password = c("pk@123", "pk@123"), # mandatory
   start = c("2015-04-15"), # optinal (all others)
   expire = c(NA, "2032-12-31"),
   admin = c(FALSE, TRUE),
@@ -79,6 +76,7 @@ set_labels(
 
 ui <- secure_app(head_auth = tags$script(inactivity),
                  theme = shinythemes::shinytheme("united"),
+                 background  = "url('1_1080.jpg');",
                  tags_top = tags$div(
                    tags$head(tags$style(css)),
                    tags$img(
@@ -87,51 +85,77 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                  dashboardPage(
                    dashboardHeader(title = tags$a(tags$img(height = "25px",src="output-onlinepngtools.png")),
                                    tags$li(class="dropdown",tags$a("Help", target="_blank")),
-                                   tags$li(class="dropdown",tags$a("User", target="_blank")),
-                                   tags$li(class="dropdown",tags$a("Exit", target="_blank"))),
-                   
-                   dashboardSidebar(width = 250,
-                                    selectizeInput("Sequence", "Enter the Sequence:",
-                                                   multiple = TRUE,
-                                                   choices = NULL),
-                                    column(12, actionButton("search", "Filter Data",width='50%',
-                                                            icon = icon("search"),
-                                                            style='padding:4px; font-size:150%,style="text-align:left;"')
-                                           ,align = "left"),
-                                    fluidRow(
-                                      column(12, br(),
-                                             textOutput("rendertext"),
-                                             actionButton('addFilter', 'Add Filter',width='50%', 
-                                                          icon = icon("plus-circle"),
-                                                          style='padding:4px; font-size:150%,style="text-align:left;"'),
-                                             align = "left"),
-                                      
-                                    ),
-                                    tags$hr(),
-                                    tags$div(id = 'placeholderAddRemFilt'),
-                                    tags$div(id = 'placeholderFilter'),
-                                    uiOutput("interDictUrl"),
-                                    br(),
-                                    br(),
-                                    radioButtons("select_mathFunction", "Choose Math Function", 
-                                                 choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
-                                    selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
-                                    textInput("newcolumnname", "new column name"),
-                                    # numericInput("formula", "Multiply", min=0, max=1000, value=1),
-                                    actionButton("update3", "Create Math Column")
+                                   tags$li(class="dropdown",tags$a("User", target="_blank"))
+                                   # ,
+                                   # tags$li(class="dropdown",tags$a("Exit", target="_blank"))
                    ),
+                   
+                   dashboardSidebar(
+                     tags$style(HTML('
+    .selectize-input {white-space: nowrap}
+    #Sequence+ div>.selectize-dropdown{width: 210px !important; font-style: italic; font-weight: bold; color: green;}
+    #Sequence+ div>.selectize-input{width: 210px !important; font-style: italic; font-weight: bold; color: green; margin-bottom: -10px;}
+                            ')),
+                     width = 250,
+                     selectizeInput("Sequence", h4("Enter the Sequence:"),
+                                    multiple = TRUE,
+                                    choices = NULL),
+                     column(12, actionButton("search", 
+                                             "Filter by Sequence(s)",
+                                             width='95%',
+                                             class = "btn-primary",
+                                             icon = icon("search", "fa-0.5x"),
+                                             style='color: #fff; 
+                                                            white-space:normal;
+                                                            background-color: #337ab7; 
+                                                            border-color: #2e6da4";
+                                                            padding:4px; 
+                                                            font-size:120%;
+                                                            text-align:left; 
+                                                            margin-left:2px;')
+                            ,align = "left",
+                            bsTooltip("search","Filter data by multiple Sequences", "bottom"),
+                            br()
+                     ),
+                     fluidRow(
+                       column(12,
+                              br(),
+                              br(),
+                              # textOutput("rendertext"),
+                              actionButton('addFilter', 'Find overlaps',width='85%', 
+                                           class = "btn-primary",
+                                           icon = icon("plus-circle"),
+                                           style='color: #fff; 
+                                                          background-color: #337ab7;
+                                                          border-color: #2e6da4";
+                                                          padding:4px; 
+                                                          font-size:120%;
+                                                          text-align:left;
+                                                          margin-left:16px;'),
+                              bsTooltip("addFilter","To Find the same Entry across multiple sequences","bottom"),
+                              align = "left"),
+                       
+                     ),
+                     # tags$hr(),
+                     tags$div(id = 'placeholderAddRemFilt'),
+                     tags$div(id = 'placeholderFilter'),
+                     fluidRow(column(12,br(),br(),br(),br(),uiOutput("interDictUrl")))),
                    
                    dashboardBody(
                      tags$style(HTML("
-    .tabbable > .nav > li > a[data-value='Table'] {background-color: #847c8a;   color:white; font-size: 16px;}
-    .tabbable > .nav > li > a[data-value='Selected Data'] {background-color: #847c8a;  color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Results Summary'] {background-color: #847c8a;   color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Expanded Sequence Data'] {background-color: #847c8a;  color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Dashboard'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Admin'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li[class=active]    > a {background-color: #0dc5c1; color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
 
   ")),
                      tabsetPanel(id = 'dataset',
-                                 tabPanel("Table", br(), DT::dataTableOutput("sampleData"),
+                                 tabPanel("Results Summary",
+                                          br(), DT::dataTableOutput("sampleData"),
+                                          # shinyjs::useShinyjs(),
+                                          # tags$style('removeClass("dtsb-title")'),
+                                          # div(id="dtsb-title", "Search"),
                                           column(DT::dataTableOutput("tempdt"), width = 6),
                                           DT::dataTableOutput("data"),
                                           shinyjs::useShinyjs(),
@@ -139,10 +163,15 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                          icon = icon("download"),
                                                                          style="color: #333; margin-left:-700px; 
                                                                          background-color: #FFF; border-color: #333"))),
-                                 tabPanel("Selected Data", br(),DT::dataTableOutput("data2"),
-                                          # downloadButton('downLoadFilter',"Download Template")
+                                 tabPanel("Expanded Sequence Data", br(),DT::dataTableOutput("data2"),
+                                          dashboardSidebar(width = 250,
+                                                           fluidRow(style = "padding: 40px 14px 5px 14px; margin: 5px 5px 5px 5px; ",
+                                                                    # custom column name
+                                                                    textInput(inputId = "nameColumn", "Enter Column Name"),
+                                                                    actionButton(inputId = "addColumn", "Create Column")))
                                  ),
                                  tabPanel("Dashboard", fluidRow(br(),
+                                                                dashboardSidebar(width = 250),
                                                                 valueBoxOutput("value1", width = 3)
                                                                 ,valueBoxOutput("value2", width = 3)
                                                                 ,valueBoxOutput("value3", width = 3)
@@ -167,10 +196,9 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    ))
                                  ),
                                  tabPanel(
-                                   # box(id="praveen", 
                                    "Admin",
                                    shinyjs::useShinyjs(),
-                                   # DT::dataTableOutput("mytable3"),
+                                   dashboardSidebar(width = 250),
                                    # add button to add column
                                    radioButtons("select_input", "Choose Row or Column", choices = c("Row", "Column")),
                                    box(id = "rowID",width = 12,
@@ -202,19 +230,13 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                 tableOutput("contents2"),
                                                 div(style = "margin: 15px 0px 0px 0px; width:100%;"),
                                                 downloadButton("columnTemplate", "Download column Template")),
-                                       
-                                       useShinyalert(),
-                                       fluidRow(style = "padding: 40px 14px 5px 14px;
-                                              margin: 5px 5px 5px 5px; ",
-                                                # custom column name
-                                                textInput(inputId = "nameColumn", "Enter Column Name"),
-                                                actionButton(inputId = "addColumn", "Create Column"))),
-                                   # radioButtons("select_mathFunction", "Choose Math Function", 
-                                   #              choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
-                                   # selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
-                                   # textInput("newcolumnname", "new column name"),
-                                   # # numericInput("formula", "Multiply", min=0, max=1000, value=1),
-                                   # actionButton("update3", "Create Math Column"),
+                                       useShinyalert()),
+                                   radioButtons("select_mathFunction", "Choose Math Function",
+                                                choices = c("Arithmetic Mean", "Geometric Mean", "Addition")),
+                                   selectizeInput("numeric_cols", "Select Numeric columns", multiple = TRUE, choices = NULL),
+                                   textInput("newcolumnname", "new column name"),
+                                   # numericInput("formula", "Multiply", min=0, max=1000, value=1),
+                                   actionButton("update3", "Create Math Column"),
                                    DT::DTOutput("data_tbl")
                                  )
                                  # )
@@ -265,6 +287,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 
 server <- function(input, output, session) {
   
+  
+  
   # result_auth <- secure_server(check_credentials = check_credentials(credentials))
   res_auth <- secure_server(check_credentials = check_credentials(credentials))
   
@@ -285,11 +309,8 @@ server <- function(input, output, session) {
   })
   
   
-  # url <- a("ID-Mapping", href="https://www.uniprot.org/id-mapping", target="_blank")
   url <- a(imageOutput("UniProt"),href="https://www.uniprot.org/id-mapping")
-  
   output$interDictUrl <- renderUI({
-    # tags$a(imageOutput("UniProt.png"),href="https://www.google.com")
     tags$a(
       href="https://www.uniprot.org/id-mapping", target="_blank",
       tags$img(src="uniprot_bg_2.png", 
@@ -297,14 +318,6 @@ server <- function(input, output, session) {
                width="180",
                height="60")
     )
-    
-    # tagList("", url,
-    #         tags$div(
-    #           tags$style("#interDictUrl
-    #         {
-    #         font-size: 25px;font-style: normal;font-weight: bold;text-align:center;
-    #                    }")
-    #         ))
   })
   
   output$rendertext <- renderText({
@@ -312,6 +325,7 @@ server <- function(input, output, session) {
   })
   
   mon <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
+  # mon <- mongo(collection = "entries_unique_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
   output$sampleData <- renderDataTable(server = TRUE,{
     df100 <- as.data.frame(mon$aggregate('[{"$limit": 1000}]'))
     df100 <- unique(df100[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
@@ -341,7 +355,7 @@ server <- function(input, output, session) {
   dTable <- function(df){
     datatable(df,selection = 'multiple', editable = TRUE,rownames = FALSE, class = 'cell-border stripe',
               extensions = c("SearchBuilder","Buttons",'ColReorder'), #'Select'
-              options = list(  initComplete = JS(
+              options = list( initComplete = JS(
                 "function(settings, json) {",
                 "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                 "}"),
@@ -351,7 +365,7 @@ server <- function(input, output, session) {
                 searching = TRUE,
                 colReorder = TRUE,
                 ordering = TRUE,
-                dom = "BfQlrtip",
+                dom = "QpfrBitl",
                 buttons =list(
                   I('colvis'), 'copy', 'print',
                   list(
@@ -475,6 +489,12 @@ server <- function(input, output, session) {
   observeEvent(data(),{
     reactiveData(data())
   })
+  
+  
+  # observe({
+  #   print("hello")
+  #   shinyjs::removeClass(class = "dtsb-title")
+  #   })
   
   proxy <- dataTableProxy('sampleData')
   observeEvent(input$search,{
@@ -621,6 +641,7 @@ server <- function(input, output, session) {
       dfk <- dataSet1[sel, ]
       dfk <- dfk %>% separate_rows(Position_List, sep = ",")
       names(dfk)[names(dfk) == 'Position_List'] <- 'Position'
+      dfg <<- dfk
       
       mytable = reactive({dfk})
       # set up reactive value
