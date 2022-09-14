@@ -353,7 +353,8 @@ server <- function(input, output, session) {
   dTable <- function(df){
     datatable(df,selection = 'multiple', editable = TRUE,rownames = FALSE, class = 'cell-border stripe',
               extensions = c("SearchBuilder","Buttons",'ColReorder'), #'Select'
-              options = list( initComplete = JS(
+              options = list(pageLength = 7,
+                             initComplete = JS(
                 "function(settings, json) {",
                 "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                 "}"),
@@ -363,7 +364,7 @@ server <- function(input, output, session) {
                 searching = TRUE,
                 colReorder = TRUE,
                 ordering = TRUE,
-                dom = "QpfrBitl",
+                dom = "QfrBitlp",
                 buttons =list(
                   I('colvis'), 'copy', 'print',
                   list(
@@ -386,6 +387,9 @@ server <- function(input, output, session) {
                     text = 'Download all data')
                   
                 ),
+                
+                language = list(searchBuilder= list(title="Refine your search", add = '+')),
+                
                 searchBuilder = list(
                   conditions = list(
                     string = list(
@@ -427,7 +431,8 @@ server <- function(input, output, session) {
   dTable2 <- function(df){
     datatable(df,selection = 'multiple', editable = TRUE,rownames = FALSE, class = 'cell-border stripe',
               extensions = c("SearchBuilder","Buttons",'ColReorder'), #'Select'
-              options = list(  initComplete = JS(
+              options = list(pageLength = 7,
+                             initComplete = JS(
                 "function(settings, json) {",
                 "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                 "}"),
@@ -437,7 +442,7 @@ server <- function(input, output, session) {
                 searching = TRUE,
                 colReorder = TRUE,
                 ordering = TRUE,
-                dom = "fQlrtip",
+                dom = "QfrBitlp",
                 searchBuilder = list(
                   conditions = list(
                     string = list(
