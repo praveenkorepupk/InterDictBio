@@ -75,7 +75,7 @@ set_labels(
 )
 
 ui <- secure_app(head_auth = tags$script(inactivity),
-                 # background  = "url('shutterstock_1938095491.png');",
+                 theme = shinythemes::shinytheme("united"),
                  background  = "url('1_1080.jpg');",
                  tags_top = tags$div(
                    tags$head(tags$style(css)),
