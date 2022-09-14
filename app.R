@@ -486,6 +486,36 @@ server <- function(input, output, session) {
     return(str_json_2)
   }
   
+  dbColumnUpdate <- function(df){
+    colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
+    colsList2 <<- names(df)
+    diffColName <<- setdiff(colsList2, colsList1)
+    for(j in 1:dim(df)[1]){
+      # print(j)
+      qry1 <- paste0('{',cmdMongoDb(df[j,], "Entry"),",",cmdMongoDb(df[j,], "Sequence"), ",", cmdMongoDb(df[j,], "Position"),'}')
+      # print(qry1)
+      for(i in diffColName){
+        qry2 <- paste0('{',cmdUpdate(df[j,], i),'}')
+        # print(qry2)
+        monExpandedRows$update(query = qry1, update=qry2)
+      }
+    }
+  }
+  
+  dbRowUpdate <- function(df){
+    qry1 <- paste0('{',cmdMongoDb(df, "Entry"),",",cmdMongoDb(df, "Sequence"), ",", cmdMongoDb(df, "Position"),'}')
+    if(dim(monExpandedRows$find(query = qry1))[1]>0){
+      colsLs1 <- c("Entry", "Sequence","Position")
+      colsLs2 <- names(df)
+      diffColName2 <- setdiff(colsLs2, colsLs1)
+      for(i in diffColName2){
+        qry2 <- paste0('{',cmdUpdate(df, i),'}')
+        monExpandedRows$update(query = qry1, update=qry2)
+      }
+    }else{
+      monExpandedRows$insert(rjson::toJSON(df))
+    }
+  }
   
   ################################################################   
   ##################### Main TabPanel  ########################### 
@@ -643,10 +673,6 @@ server <- function(input, output, session) {
       dfk$Position <- as.integer(dfk$Position)
       
       dfg <- dfk
-      cmdMongoDb<- function(df, columnName){
-        str_json_2 <- paste0('"',columnName,'":{"$in" : ',jsonlite::toJSON(df[[columnName]]),'}')
-        return(str_json_2)
-      }
       
       qry <<- paste0('{',cmdMongoDb(dfg, "Entry"),",",cmdMongoDb(dfg, "Sequence"),",",cmdMongoDb(dfg, "Position"),'}')
       dfk <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
@@ -666,43 +692,14 @@ server <- function(input, output, session) {
         newData <- reactiveData()
         if(is.null(input$addColumn)){
           newData <- rbind.data.frame(dfk, x())
-          copyrowdf <<- x()
-          
-          # monExpandedRows$insert(rjson::toJSON(copyrowdf))
-          qry1 <<- paste0('{',cmdMongoDb(copyrowdf, "Entry"),",",cmdMongoDb(copyrowdf, "Sequence"), ",", cmdMongoDb(copyrowdf, "Position"),'}')
-          if(dim(monExpandedRows$find(query = qry1))[1]>0){
-            colsLs1 <<- c("Entry", "Sequence","Position")
-            colsLs2 <<- names(copyrowdf)
-            diffColName2 <- setdiff(colsLs2, colsLs1)
-            for(i in diffColName2){
-              qry2 <- paste0('{',cmdUpdate(copyrowdf, i),'}')
-              monExpandedRows$update(query = qry1, update=qry2)
-            }
-          }else{
-            monExpandedRows$insert(rjson::toJSON(copyrowdf))
-          }
-          
-          
+          copyrowdf <- x()
+          dbRowUpdate(copyrowdf)
         }else{
           newData <- rbind.data.frame(newData, x())
-          copyrowdf <<- x()
-          # monExpandedRows$insert(rjson::toJSON(copyrowdf))
-          qry1 <<- paste0('{',cmdMongoDb(copyrowdf, "Entry"),",",cmdMongoDb(copyrowdf, "Sequence"), ",", cmdMongoDb(copyrowdf, "Position"),'}')
-          if(length(mon$find(query = qry1))>0){
-            colsList1 <<- c("Entry", "Sequence","Position")
-            colsList2 <<- names(copyrowdf)
-            diffColName <- setdiff(colsList2, colsList1)
-            for(i in diffColName){
-              qry2 <- paste0('{',cmdUpdate(copyrowdf, i),'}')
-              monExpandedRows$update(query = qry1, update=qry2)
-            }
-          }else{
-            monExpandedRows$insert(rjson::toJSON(copyrowdf))
-          }
-          
+          copyrowdf <- x()
+          dbRowUpdate(copyrowdf)
         }
         newData <<- newData
-        
         reactiveData(newData)
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
         output$data2 = renderDataTable(server = FALSE,{
@@ -744,51 +741,14 @@ server <- function(input, output, session) {
           }
           newData <<- newData
           
-          # colsList1 <<- names(monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}'))
-          colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-          colsList2 <<- names(newData)
-          diffColName <- setdiff(colsList2, colsList1)
-          
-          # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-          # for(i in diffColName){
-          #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-          #   monExpandedRows$update(query = qry1, update=qry2)
-          # }
-          
-          for(j in 1:dim(newData)[1]){
-            print(j)
-            qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-            print(qry1)
-            for(i in diffColName){
-              qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-              print(qry2)
-              mon$update(query = qry1, update=qry2)
-            }
-          }
-          
+          dbColumnUpdate(newData)
+
           reactiveData(newData)
           replaceData(proxy, reactiveData(), resetPaging = FALSE)
           output$data2 = renderDataTable({
             dTable(reactiveData())
-            # fdf <- reactiveData()
-            # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
-            # dTable(fdf)
           })
         }
-        
-        # if(valShinyAlert == TRUE){
-        # if(!exists("newData")){
-        #   newData <- merge(dfk, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
-        # }else{
-        #   newData <- merge(newData, y(), by = c("Sequence","Entry","Position_List"),all.x = TRUE)
-        # }
-        # }
-        # newData <<- newData
-        # reactiveData(newData)
-        # replaceData(proxy, reactiveData(), resetPaging = FALSE)
-        # output$data2 = renderDataTable({
-        #   dTable(reactiveData())
-        # })
       })
       
       mycallback <- function(value) {
@@ -801,27 +761,7 @@ server <- function(input, output, session) {
             newData[mcolchars] <- paste(newData[[lss[1]]],newData[[lss[2]]],sep=",")
             dropList <<- lss
             newData <- newData[, !colnames(newData) %in% dropList]
-            
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
-            
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
-            
+            dbColumnUpdate(newData)
             
           }else{
             newData <- merge(newData, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
@@ -831,27 +771,8 @@ server <- function(input, output, session) {
             dropList <<- lss
             newData <- newData[, !colnames(newData) %in% dropList]
             
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
+            dbColumnUpdate(newData)
             
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
-            
-            # newData <<- merge_dfs_overwrite_col(y(), newData, c("Count"), c("Sequence","Entry","Position_List"))
           }
         }else if(value == FALSE){
           if(!exists("newData")){
@@ -867,25 +788,7 @@ server <- function(input, output, session) {
             dropList2 <<- c(char1, char2)
             newData <- newData[, !colnames(newData) %in% dropList2]
             
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
-            
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
+            dbColumnUpdate(newData)
             
             
           }else{
@@ -900,27 +803,7 @@ server <- function(input, output, session) {
             newData[char] <- newData[char1]
             dropList2 <<- c(char1, char2)
             newData <- newData[, !colnames(newData) %in% dropList2]
-            
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
-            
-            
+            dbColumnUpdate(newData)
           }
           
         }
@@ -928,33 +811,12 @@ server <- function(input, output, session) {
         
         newData <<- newData
         
-        colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-        colsList2 <<- names(newData)
-        diffColName <- setdiff(colsList2, colsList1)
-        # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-        # for(i in diffColName){
-        #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-        #   monExpandedRows$update(query = qry1, update=qry2)
-        # }
-        
-        for(j in 1:dim(newData)[1]){
-          print(j)
-          qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-          print(qry1)
-          for(i in diffColName){
-            qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-            print(qry2)
-            mon$update(query = qry1, update=qry2)
-          }
-        }
+        dbColumnUpdate(newData)
         
         reactiveData(newData)
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
         output$data2 = renderDataTable({
           dTable(reactiveData())
-          # fdf <- reactiveData()
-          # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
-          # dTable(fdf)
         })
         
       }
@@ -964,26 +826,7 @@ server <- function(input, output, session) {
       observeEvent(input$addColumn,{
         newData <- reactiveData()
         
-        colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-        colsList2 <<- names(newData)
-        diffColName <- setdiff(colsList2, colsList1)
-        # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-        # for(i in diffColName){
-        #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-        #   monExpandedRows$update(query = qry1, update=qry2)
-        # }
-        
-        for(j in 1:dim(newData)[1]){
-          print(j)
-          qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-          print(qry1)
-          for(i in diffColName){
-            qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-            print(qry2)
-            mon$update(query = qry1, update=qry2)
-          }
-        }
-        
+        dbColumnUpdate(newData)
         
         if(input$nameColumn %in% colnames(newData))
         {
@@ -995,9 +838,6 @@ server <- function(input, output, session) {
           replaceData(proxy, reactiveData(), resetPaging = FALSE)
           output$data2 = renderDataTable({
             dTable(reactiveData())
-            # fdf <- reactiveData()
-            # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
-            # dTable(fdf)
           })
         }
       })
@@ -1037,35 +877,12 @@ server <- function(input, output, session) {
             dtf <- newData
           }
           if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
-            # newcolval <- dtf$Count*as.numeric(input$formula)
-            # numcolnameslist <<- input$numeric_cols
-            # newcolval <- dtf[input$numeric_cols]*as.numeric(input$formula)
-            # print(input$numeric_cols)
-            # newcolval <- dtf[input$numeric_cols[[1]]]*dtf[input$numeric_cols[[2]]]
             newcolval <- rowMeans(dtf[,input$numeric_cols], na.rm=TRUE)
             newcol <- data.frame(newcolval)
             names(newcol) <- input$newcolumnname
             newData <<- cbind(dtf,newcol)
             
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
-            
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
+            dbColumnUpdate(newData)
           }
           newData
         }else if(input$select_mathFunction == "Geometric Mean"){
@@ -1075,37 +892,12 @@ server <- function(input, output, session) {
             dtf <- newData
           }
           if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
-            # newcolval <- dtf$Count*as.numeric(input$formula)
-            # numcolnameslist <<- input$numeric_cols
-            # newcolval <- dtf[input$numeric_cols]*as.numeric(input$formula)
-            # print(input$numeric_cols)
-            # newcolval <- dtf[input$numeric_cols[[1]]]*dtf[input$numeric_cols[[2]]]
-            # newcolval <- prod(dtf[,input$numeric_cols], na.rm=TRUE)
-            # newcolval <- apply(dtf[,input$numeric_cols],1,prod)
             newcolval <- exp(rowMeans(log(dtf[,input$numeric_cols]), na.rm=TRUE))
             newcol <- data.frame(newcolval)
             names(newcol) <- input$newcolumnname
             newData <<- cbind(dtf,newcol)
             
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
-            
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
+            dbColumnUpdate(newData)
           }
           newData
         }else if(input$select_mathFunction == "Addition"){
@@ -1115,43 +907,17 @@ server <- function(input, output, session) {
             dtf <- newData
           }
           if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
-            # newcolval <- dtf$Count*as.numeric(input$formula)
-            # numcolnameslist <<- input$numeric_cols
-            # newcolval <- dtf[input$numeric_cols]*as.numeric(input$formula)
-            # print(input$numeric_cols)
-            # newcolval <- dtf[input$numeric_cols[[1]]]+dtf[input$numeric_cols[[2]]]
-            # newcolval <- sum(dtf[,input$numeric_cols], na.rm=TRUE)
             newcolval <- apply(dtf[,input$numeric_cols],1,sum)
             newcol <- data.frame(newcolval)
             names(newcol) <- input$newcolumnname
             newData <<- cbind(dtf,newcol)
             
-            colsList1 <<- c("Entry", "Sequence","Position", "EntryName","ProteinName","GeneNames","Organism","Length","Count")
-            colsList2 <<- names(newData)
-            diffColName <- setdiff(colsList2, colsList1)
-            # qry1 <<- paste0('{',cmdMongoDb(newData, "Entry"),",",cmdMongoDb(newData, "Sequence"), ",", cmdMongoDb(newData, "Position"),'}')
-            # for(i in diffColName){
-            #   qry2 <- paste0('{',cmdUpdate(newData, i),'}')
-            #   monExpandedRows$update(query = qry1, update=qry2)
-            # }
-            
-            for(j in 1:dim(newData)[1]){
-              print(j)
-              qry1 <- paste0('{',cmdMongoDb(newData[j,], "Entry"),",",cmdMongoDb(newData[j,], "Sequence"), ",", cmdMongoDb(newData[j,], "Position"),'}')
-              print(qry1)
-              for(i in diffColName){
-                qry2 <- paste0('{',cmdUpdate(newData[j,], i),'}')
-                print(qry2)
-                mon$update(query = qry1, update=qry2)
-              }
-            }
+            dbColumnUpdate(newData)
           }
           newData
         }
       })      
-      # output$data_tbl <- DT::renderDT({reactive_dt()})
-      
-      
+
       mytable2 = reactive({reactive_dt()})
       # set up reactive value
       reactiveData = reactiveVal()
@@ -1166,9 +932,6 @@ server <- function(input, output, session) {
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
         output$data2 = renderDataTable({
           dTable(reactiveData())
-          # fdf <- reactiveData()
-          # names(fdf)[names(fdf) == 'Position_List'] <- 'Position'
-          # dTable(fdf)
         })
       })
       
