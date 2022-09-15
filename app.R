@@ -90,11 +90,11 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    tags$li(class="dropdown",tags$a("User", target="_blank"))),
                    
                    dashboardSidebar(
-                     tags$style(HTML('
-    .selectize-input {white-space: nowrap}
-    #Sequence+ div>.selectize-dropdown{width: 210px !important; font-style: italic; font-weight: bold; color: green;}
-    #Sequence+ div>.selectize-input{width: 210px !important; font-style: italic; font-weight: bold; color: green; margin-bottom: -10px;}
-                            ')),
+    #                  tags$style(HTML('
+    # .selectize-input {white-space: nowrap}
+    # #Sequence+ div>.selectize-dropdown{width: 210px !important; font-style: italic; font-weight: bold; color: green;}
+    # #Sequence+ div>.selectize-input{width: 210px !important; font-style: italic; font-weight: bold; color: green; margin-bottom: -10px;}
+    #                         ')),
                      width = 250,
                      selectizeInput("Sequence", h4("Enter the Sequence:"),
                                     multiple = TRUE,
@@ -151,6 +151,12 @@ ui <- secure_app(head_auth = tags$script(inactivity),
   ")),
                      tabsetPanel(id = 'dataset',
                                  tabPanel("Results Summary",
+                                          # div(id="dtsb-title", style = "inline-block;font-size:1000px; "),
+                                          # div(style = "font-size:100px;"),
+                                          # tags$head(includeCSS("www/folder.css")),
+                                          
+                                          tags$head(tags$style("#dtsb-group{color: red;font-size: 20px;font-style: italic;}")),
+                                          
                                           br(), DT::dataTableOutput("sampleData"),
                                           # shinyjs::useShinyjs(),
                                           # tags$style('removeClass("dtsb-title")'),
@@ -167,32 +173,56 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                            fluidRow(style = "padding: 40px 14px 5px 14px; margin: 5px 5px 5px 5px; ",
                                                                     # custom column name
                                                                     textInput(inputId = "nameColumn", "Enter Column Name"),
-                                                                    actionButton(inputId = "addColumn", "Create Column")))
+                                                                    actionButton(inputId = "addColumn", "Create Column"),
+                                                                    actionButton(inputId = "done", "Done")))
                                  ),
                                  tabPanel("Dashboard", fluidRow(br(),
                                                                 dashboardSidebar(width = 250),
-                                                                valueBoxOutput("value1", width = 3)
-                                                                ,valueBoxOutput("value2", width = 3)
-                                                                ,valueBoxOutput("value3", width = 3)
-                                                                ,valueBoxOutput("value4", width = 3)
+                                                                valueBoxOutput("value1", width = 4)
+                                                                ,valueBoxOutput("value2", width = 4)
+                                                                # ,valueBoxOutput("value3", width = 3)
+                                                                ,valueBoxOutput("value4", width = 4)
                                  ),
                                  fluidRow( 
                                    box(
-                                     title = "Sequence Plot"
+                                     title = "Sequence vs Entry"
                                      ,status = "primary"
                                      ,solidHeader = TRUE 
                                      ,collapsible = TRUE 
-                                     ,plotOutput("seqencePlot", height = "300px")
+                                     ,plotlyOutput("seqencePlot", height = "300px")
                                    ),
+                                   # box(
+                                   #   title = "Summary Statistics", 
+                                   #   status = "warning", 
+                                   #   solidHeader = TRUE,
+                                   #   width = 6,
+                                   #   collapsible = TRUE,
+                                   #   height = 6,
+                                   #   verbatimTextOutput("summaryDset")
+                                   # ),
                                    box(
-                                     title = "Summary Statistics", 
+                                     title = "Sequence sum of count"
+                                     ,status = "primary"
+                                     ,solidHeader = TRUE 
+                                     ,collapsible = TRUE 
+                                     ,plotlyOutput("seqenceCount", height = "300px")
+                                   ),
+                                   # box(
+                                   #   title = "Sequence vs Position Length"
+                                   #   ,status = "primary"
+                                   #   ,solidHeader = TRUE 
+                                   #   ,collapsible = TRUE 
+                                   #   ,plotlyOutput("positionVsLengthBySeq", height = "300px")
+                                   # ),
+                                   box(
+                                     title = "Intersection", 
                                      status = "warning", 
                                      solidHeader = TRUE,
-                                     width = 6,
+                                     width = 12,
                                      collapsible = TRUE,
-                                     height = 360,
-                                     verbatimTextOutput("summaryDset")
-                                   ))
+                                     simpleNetworkOutput("seqLengthnet")
+                                   ),
+                                 )
                                  ),
                                  tabPanel(
                                    "Admin",
@@ -333,8 +363,9 @@ server <- function(input, output, session) {
   seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":2000}]'
   # seqQry <- '[{"$group":{"_id":"$Sequence"}}]'
   seqList <- mon$aggregate(seqQry)
-  updateSelectizeInput(session, "Sequence", choices = c(seqList["_id"]), 
+  updateSelectizeInput(session, "Sequence", choices = c(seqList["_id"]),
                        # selected = "AAAD" ,
+                       options = list(maxItems = 10000),
                        server = TRUE)
   query_db <- function(input){
     doc_type <- paste0(input)
@@ -387,8 +418,7 @@ server <- function(input, output, session) {
                     text = 'Download all data')
                   
                 ),
-                
-                language = list(searchBuilder= list(title="Refine your search", add = '+')),
+                language = list(searchBuilder= list(title="Refine your search", add = 'Add Filter Condition')),
                 
                 searchBuilder = list(
                   conditions = list(
@@ -671,6 +701,10 @@ server <- function(input, output, session) {
   output$data2 <- renderDataTable({
     dataSet1 <- filtered_data()
     sel <- input$sampleData_rows_selected
+    if(is.null(sel)){
+      # hideTab("dataset", "Expanded Sequence Data")
+      dTable(dataSet1[FALSE,])
+    }else{
     if(length(dataSet1)){
       dfk <- dataSet1[sel, ]
       dfk <- dfk %>% separate_rows(Position_List, sep = ",")
@@ -679,7 +713,7 @@ server <- function(input, output, session) {
       
       dfg <- dfk
       
-      qry <<- paste0('{',cmdMongoDb(dfg, "Entry"),",",cmdMongoDb(dfg, "Sequence"),",",cmdMongoDb(dfg, "Position"),'}')
+      qry <- paste0('{',cmdMongoDb(dfg, "Entry"),",",cmdMongoDb(dfg, "Sequence"),",",cmdMongoDb(dfg, "Position"),'}')
       dfk <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
       
       mytable = reactive({dfk})
@@ -797,9 +831,6 @@ server <- function(input, output, session) {
             
             
           }else{
-            # newData <- anti_join(newData, y(), by = c("Sequence","Entry","Position_List")) %>% bind_rows(y())
-            # newData2 <- within(merge(newData, y(), by=c("Sequence","Entry","Position_List"),all.x = TRUE), 
-            #        {paste(mcolchars) <- ifelse(is.na(paste(mcolchars,".x", sep="")),paste(mcolchars,".y", sep=""),paste(mcolchars,".x", sep="")); paste(mcolchars,".x", sep="") <- NULL; paste(mcolchars,".y", sep="") <- NULL})
             newData <- merge(x = newData, y = y(), by = c("Sequence","Entry","Position"), all = T)
             char <- paste0(mcolchars)
             char1 <- paste0(mcolchars, ".x", "")
@@ -813,7 +844,6 @@ server <- function(input, output, session) {
           
         }
         
-        
         newData <<- newData
         
         dbColumnUpdate(newData)
@@ -826,13 +856,38 @@ server <- function(input, output, session) {
         
       }
       
+      data = reactive({dfk})
+      
+      # set up reactive value
+      reactiveData = reactiveVal()
+      
+      # observe data
+      observeEvent(data(),{
+        reactiveData(data())
+      })
+      
+      # showing only 5 rows per page
+      # options(DT.options = list(pageLength = 5))
+      
+      # make cells editable in our data
+      output$data2 = renderDataTable(dTable2(reactiveData()))
+
+      # edit a single cell
+      proxy = dataTableProxy('data2')
+      observeEvent(input$data2_cell_edit, {
+        info = input$data2_cell_edit
+        print(info)
+        newData <- reactiveData()
+        newData[info$row, info$col+1] <- info$value
+        reactiveData(newData)
+        replaceData(proxy, reactiveData(), resetPaging = FALSE)
+      })
       
       # add a column
+      # proxy = dataTableProxy('data2')
       observeEvent(input$addColumn,{
         newData <- reactiveData()
-        
         dbColumnUpdate(newData)
-        
         if(input$nameColumn %in% colnames(newData))
         {
           shinyalert("warning","The column name is already exist", type = "error")
@@ -842,9 +897,17 @@ server <- function(input, output, session) {
           reactiveData(newData)
           replaceData(proxy, reactiveData(), resetPaging = FALSE)
           output$data2 = renderDataTable({
-            dTable(reactiveData())
+            print(reactiveData())
+            newData <<- reactiveData()
+            dTable(newData)
+            
           })
         }
+      })
+      
+      # check for 'done' button press
+      observeEvent(input$done, {
+        newData <<- reactiveData()
       })
       
       output$downLoadFilter <- downloadHandler(
@@ -941,7 +1004,7 @@ server <- function(input, output, session) {
       })
       
       dTable(dfk)
-    }
+    }}
   }, server = FALSE)
   
   observeEvent(input$select_input,{
@@ -1037,18 +1100,53 @@ server <- function(input, output, session) {
   })
   
   #creating the plotOutput content
-  output$seqencePlot <- renderPlot({
-    dataforPlots <- filtered_data()
+  output$seqencePlot <- renderPlotly({
+    dataforPlots <<- filtered_data()
     seqTable <- as.data.frame(table(dataforPlots$Sequence))
     colnames(seqTable)<- c("Sequence","Count")
-    
-    ggplot(data = seqTable, 
+    p1 <- ggplot(data = seqTable, 
            aes(x=Sequence, y=Count, fill=factor(Sequence))) + 
-      geom_bar(position = "dodge", stat = "identity") + ylab("Sequence Count") + 
-      xlab("Sequence Category") + theme(legend.position="bottom" 
+      geom_bar(position = "dodge", stat = "identity") + ylab("Target Count") + 
+      xlab("Sequence") + theme(legend.position="bottom" 
                                         ,plot.title = element_text(size=15, face="bold")) + 
-      ggtitle("Sequence") + theme(plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
+      theme(plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
+    ggplotly(p1)
   })
+  
+  #creating the plotOutput content
+  output$seqenceCount <- renderPlotly({
+    dataforPlots <<- filtered_data()
+    sequenceSumCount <<- dataforPlots
+    sequenceSumCount <<- aggregate(sequenceSumCount$Count, by=list(Category=sequenceSumCount$Sequence), FUN=sum)
+    colnames(sequenceSumCount)<- c("Sequence","Count")
+    p2 <- ggplot(data = sequenceSumCount, 
+                 aes(x=Sequence, y=Count, fill=factor(Sequence))) + 
+      geom_bar(position = "dodge", stat = "identity") + ylab("Sum of Count") + 
+      xlab("Sequence") + theme(legend.position="bottom" 
+                               ,plot.title = element_text(size=15, face="bold")) + 
+      theme(plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
+    ggplotly(p2)
+    
+    # ggplotly(ggplot(sequenceSumCount, aes(x=Category, y=x)) + geom_bar(stat = "identity"))
+  })
+
+  #creating the plotOutput content
+  output$positionVsLengthBySeq <- renderPlotly({
+    dataforPlots <- filtered_data()
+    dataforPlots <- dataforPlots %>% separate_rows(Position_List, sep = ",")
+    dataforPlots$Position_List <- as.numeric(dataforPlots$Position_List)
+    fig <- plot_ly(data = dataforPlots, x = ~Length, y = ~Position_List, color = ~Sequence, type = "scatter")
+    fig
+  })
+
+  #creating the plotOutput content
+  output$seqLengthnet <- renderSimpleNetwork({
+    dataforPlots <- filtered_data()
+    dataforPlots <- dataforPlots %>% separate_rows(Position_List, sep = ",")
+    dataforPlots$Position_List <- as.numeric(dataforPlots$Position_List)
+    simpleNetwork(dataforPlots[, c("Sequence", "Entry")], height="100px", width="100px", zoom = TRUE)
+  })
+  
   
   output$summaryDset <- renderPrint({
     dataforSummary <- filtered_data()
