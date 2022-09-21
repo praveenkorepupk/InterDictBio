@@ -49,8 +49,8 @@ idleTimer();"
 
 # # data.frame with credentials info
 credentials <- data.frame(
-  user = c("praveen", "puneet", "veda", "sami"), # mandatory
-  password = c("pk@123", "ps@123","vt@123","sb@123"), # mandatory
+  user = c("admin", "puneet", "veda", "sami"), # mandatory
+  password = c("admin", "ps@123","vt@123","sb@123"), # mandatory
   start = c("2015-04-15"), # optinal (all others)
   expire = c(NA, "2032-12-31",NA,NA),
   admin = c(FALSE, TRUE, FALSE, TRUE),
@@ -82,7 +82,7 @@ set_labels(
 ui <- secure_app(head_auth = tags$script(inactivity),
                  theme = shinythemes::shinytheme("united"),
                  background  = "url('1_1080_2.png');",
-                 
+                 fab_position = "top-right",
                  tags_top = tags$div(
                    tags$head(tags$style(css)),
                    tags$img(
@@ -370,8 +370,8 @@ server <- function(input, output, session) {
     dTable(df100)
   })
   
-  # seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":2000}]'
-  seqQry <- '[{"$group":{"_id":"$Sequence"}}]'
+  seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":2000}]'
+  # seqQry <- '[{"$group":{"_id":"$Sequence"}}]'
   seqList <- mon$aggregate(seqQry)
   # updateSelectizeInput(session, "Sequence", choices = c(seqList["_id"]),
   #                      # selected = "AAAD" ,
@@ -722,7 +722,7 @@ server <- function(input, output, session) {
   })  
   
   
-  output$data2 <- renderDataTable({
+  output$data2 <- renderDataTable(server = FALSE,{
     dataSet1 <- filtered_data()
     sel <- input$sampleData_rows_selected
     if(is.null(sel)){
@@ -812,7 +812,7 @@ server <- function(input, output, session) {
             
             reactiveData(newData)
             replaceData(proxy, reactiveData(), resetPaging = FALSE)
-            output$data2 = renderDataTable({
+            output$data2 = renderDataTable(server = FALSE,{
               dTable(reactiveData())
             })
           }
@@ -854,10 +854,7 @@ server <- function(input, output, session) {
               newData[char] <- newData[char1]
               dropList2 <<- c(char1, char2)
               newData <- newData[, !colnames(newData) %in% dropList2]
-              
               dbColumnUpdate(newData)
-              
-              
             }else{
               newData <- merge(x = newData, y = y(), by = c("Sequence","Entry","Position"), all = T)
               char <- paste0(mcolchars)
@@ -878,7 +875,7 @@ server <- function(input, output, session) {
           
           reactiveData(newData)
           replaceData(proxy, reactiveData(), resetPaging = FALSE)
-          output$data2 = renderDataTable({
+          output$data2 = renderDataTable(server = FALSE,{
             dTable(reactiveData())
           })
           
@@ -898,7 +895,7 @@ server <- function(input, output, session) {
         # options(DT.options = list(pageLength = 5))
         
         # make cells editable in our data
-        output$data2 = renderDataTable(dTable(reactiveData()))
+        output$data2 = renderDataTable(server = FALSE,{dTable(reactiveData())})
         
         # edit a single cell
         proxy = dataTableProxy('data2')
@@ -924,7 +921,7 @@ server <- function(input, output, session) {
             newData <<- newData
             reactiveData(newData)
             replaceData(proxy, reactiveData(), resetPaging = FALSE)
-            output$data2 = renderDataTable({
+            output$data2 = renderDataTable(server = FALSE,{
               print(reactiveData())
               newData <<- reactiveData()
               dTable(newData)
@@ -1038,14 +1035,14 @@ server <- function(input, output, session) {
           newData <- reactiveData()
           reactiveData(newData)
           replaceData(proxy, reactiveData(), resetPaging = FALSE)
-          output$data2 = renderDataTable({
+          output$data2 = renderDataTable(server = FALSE,{
             dTable(reactiveData())
           })
         })
         
         dTable(dfk)
       }}
-  }, server = FALSE)
+  })
   
   observeEvent(input$select_input,{
     if(input$select_input == "Row"){
