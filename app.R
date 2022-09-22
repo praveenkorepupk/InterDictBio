@@ -25,6 +25,7 @@ library(jsonlite)
 library(igraph)
 library(networkD3)
 library(plyr)
+library(visNetwork)
 
 mon <- mongo(collection = "entries_unique_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
 monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
@@ -198,11 +199,11 @@ credentials <- data.frame(
 
 css <- HTML(".btn-primary {
                   color: #ffffff;
-                  background-color: #0dc5c1;
-                  border-color: #0dc5c1;
+                  background-color: #1384a7;
+                  border-color: #1384a7;
               }
               .panel-primary {
-                  border-color: #0dc5c1;
+                  border-color: #1384a7;
               }")
 
 # In global.R for example:
@@ -227,11 +228,15 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                    )),
                  dashboardPage(
                    dashboardHeader(title = tags$a(tags$img(height = "25px",src="output-onlinepngtools.png")),
-                                   tags$li(class="dropdown",tags$a("Help", target="_blank")),
-                                   tags$li(class="dropdown",tags$a("User", target="_blank")),
-                                   tags$li(class="dropdown",actionLink("action_logout", "Logout!",
-                                                                       style='font-size:120%;font-weight: bold;'))),
-                   
+                                   # tags$li(class="dropdown",tags$a("Help", target="_blank", href="sample.pdf",tags$img(src='help.png'))),
+                                   tags$li(class="dropdown",
+                                           actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon",
+                                                                                  onclick ="window.open('sample.pdf', '_blank')"))),
+                                   tags$li(class="dropdown",
+                                           actionLink("User", "User", icon = icon("user", lib = "glyphicon"))),
+                                   tags$li(class="dropdown",actionLink("action_logout", "Exit",icon = icon("off", lib = "glyphicon"),
+                                                                       style='font-size:100%;font-weight: bold;
+                                                                       margin-left:-16px;'))),
                    dashboardSidebar(
                      tags$script("document.getElementsByClassName('sidebar-toggle')[0].style.visibility = 'hidden';"),
                      width = 250,
@@ -284,15 +289,15 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                    
                    dashboardBody(
                      tags$style(HTML("
-    .tabbable > .nav > li > a[data-value='Results Summary'] {background-color: #847c8a;   color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Results Summary'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Selected Data'] {background-color: #847c8a;  color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Dashboard'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Admin'] {background-color: #847c8a; color:white; font-size: 16px;}
-    .tabbable > .nav > li[class=active]    > a {background-color: #0dc5c1; color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
+    .tabbable > .nav > li[class=active] > a {background-image: linear-gradient(45deg, #052C49,#8C2D29); color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
 
   ")),
                      tabsetPanel(id = 'dataset',
-                                 tabPanel("Results Summary",
+                                 tabPanel("Results Summary", icon = icon("table"),
                                           # tags$head(includeCSS("searchBuilder.dataTables.min.css")),
                                           tags$head(tags$style("#dtsb-group{color: red;font-size: 20px;font-style: italic;}")),
                                           br(), DT::dataTableOutput("sampleData"),
@@ -309,7 +314,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                          icon = icon("download"),
                                                                          style="color: #333; margin-left:-700px; 
                                                                          background-color: #FFF; border-color: #333"))),
-                                 tabPanel("Selected Data", br(),DT::dataTableOutput("data2"),
+                                 tabPanel("Selected Data", icon = icon("table"), br(),DT::dataTableOutput("data2"),
                                           dashboardSidebar(width = 250,
                                                            fluidRow(style = "padding: 40px 14px 5px 14px; margin: 5px 5px 5px 5px; ",
                                                                     # custom column name
@@ -317,7 +322,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                     actionButton(inputId = "addColumn", "Create Bins"),
                                                                     actionButton(inputId = "done", "Done")))
                                  ),
-                                 tabPanel("Dashboard", fluidRow(br(),
+                                 tabPanel("Dashboard", icon = icon("bar-chart-o"), fluidRow(br(),
                                                                 dashboardSidebar(width = 250),
                                                                 valueBoxOutput("value1", width = 4)
                                                                 ,valueBoxOutput("value2", width = 4)
@@ -343,12 +348,13 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                               solidHeader = TRUE,
                                               width = 12,
                                               collapsible = TRUE,
-                                              simpleNetworkOutput("seqLengthnet")
+                                              # simpleNetworkOutput("seqLengthnet")
+                                              visNetworkOutput("seqLengthnet")
                                             ),
                                           )
                                  ),
                                  tabPanel(
-                                   "Admin",
+                                   "Admin",icon = icon("user", lib = "glyphicon"),
                                    shinyjs::useShinyjs(),
                                    dashboardSidebar(width = 250),
                                    # add button to add column
@@ -395,7 +401,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                    ),tags$head(tags$style(HTML('
         /* logo */
         .skin-blue .main-header .logo {
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
+                              background-image: linear-gradient(45deg, #e6dbdb,#f4f4f4);
                               background-position-x: initial;
                               background-position-y: initial;
                               background-size: initial;
@@ -409,7 +415,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 
         /* logo when hovered */
         .skin-blue .main-header .logo:hover {
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
+                              background-image: linear-gradient(45deg, #e6dbdb,#f4f4f4);
                               background-position-x: initial;
                               background-position-y: initial;
                               background-size: initial;
@@ -423,7 +429,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 
         /* navbar (rest of the header) */
         .skin-blue .main-header .navbar {
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
+                              background-image: linear-gradient(45deg,#f4f4f4,#8C2D29);
                               background-position-x: initial;
                               background-position-y: initial;
                               background-size: initial;
@@ -1124,11 +1130,26 @@ server <- function(input, output, session) {
   })
   
   #creating the plotOutput content
-  output$seqLengthnet <- renderSimpleNetwork({
-    dataforPlots <- filtered_data()
-    dataforPlots <- dataforPlots %>% separate_rows(Position_List, sep = ",")
-    dataforPlots$Position_List <- as.numeric(dataforPlots$Position_List)
-    simpleNetwork(dataforPlots[, c("Sequence", "Entry")], height="100px", width="100px", zoom = TRUE)
+  output$seqLengthnet <- renderVisNetwork({
+    dataforPlots <<- filtered_data()
+    # dataforPlots <- dataforPlots %>% separate_rows(Position_List, sep = ",")
+    # dataforPlots$Position_List <- as.numeric(dataforPlots$Position_List)
+    # simpleNetwork(dataforPlots[, c("Sequence", "Entry")], height="100px", width="100px", zoom = TRUE)
+    v1 <- dataforPlots$Sequence
+    v2 <- dataforPlots$Entry
+    v3 <<- append(v1,v2)
+    nodes <<- data.frame(unique(v3),unique(v3))
+    colnames(nodes) <- c("id","title")
+    edges <- dataforPlots[,c(2,7)]
+    colnames(edges) <- c("from", "to")
+    visNetwork(nodes, edges, height = "600px", width = "100%") %>% 
+      visIgraphLayout(physics = T) %>%
+      visInteraction(hover = TRUE) %>%
+      visEvents(hoverNode = "function(nodes) {
+                Shiny.onInputChange('unique_id', nodes);
+                ;}", hoverEdge = "function(edges) {
+    Shiny.onInputChange('unique_id', edges);
+    ;}")
   })
   
   
@@ -1144,6 +1165,12 @@ server <- function(input, output, session) {
     req(res_auth$user)
     shinyjs::hide("fab_btn_div")
   })
+  
+  observeEvent(input$Help, {
+    # Absolute path to a pdf
+    file.show(file.path("www/sample.pdf"))
+  })
+  
   
 }
 
