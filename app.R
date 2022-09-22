@@ -27,8 +27,13 @@ library(networkD3)
 library(plyr)
 library(visNetwork)
 
-mon <- mongo(collection = "entries_unique_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
-monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
+#### Version - 1
+mon <- mongo(collection = "entries_unique_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
+monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
+
+#### Version - 2
+# mon <- mongo(collection = "entries_unique_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
+# monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
 seqQry <- '[{"$group":{"_id":"$Sequence"}},{"$limit":2000}]'
 # seqQry <- '[{"$group":{"_id":"$Sequence"}}]'
 seqList <- mon$aggregate(seqQry)
