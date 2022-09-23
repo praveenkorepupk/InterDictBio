@@ -1,5 +1,5 @@
 ## InterDictBio R Shiny Application Development
-
+rm(list=ls())
 library(shinydashboard)
 library(shiny)
 library(mongolite)
@@ -659,6 +659,47 @@ server <- function(input, output, session) {
           write.table(dataSet[input$sampleData_rows_selected,], file, row.names = FALSE)
         }
       )
+      
+      ## Finding the InterSection between the sequences based on EntryName
+      dfInter <- eventReactive(input$addFilter,{
+        datac <- filtered_data()
+        datac <-  datac %>%
+          group_by(EntryName) %>%
+          filter(n_distinct(Sequence) > 1) %>%
+          ungroup
+      })
+      
+      output$interSectionData <- renderDataTable(server = FALSE,{
+        dff <<- dfInter()
+        datatable(dff)
+      })
+      
+      dfj <- reactive({
+        tempdataF <- dfInter()
+        if(!empty(tempdataF)){
+          tempmydata <- tempdataF
+          tempmydata <- data.frame(lapply(tempmydata, as.character))
+          tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
+          tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence', 'Count')))
+          tempmydata <- tempmydata[,c('EntryName', 'Sequence')] %>% group_by(EntryName) %>% 
+            summarise_all(funs(paste(na.omit(.), collapse = ",")))
+        }else{
+          shiny::showNotification("No data", type = "error")
+          tempmydata <- tempdataF
+          tempmydata <- data.frame(lapply(tempmydata, as.character))
+          tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
+          tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence')))
+          tempmydata
+        }
+      })
+      
+      output$rendertext <- renderText({
+        if(nrow(dfj()) == 0)
+          return("There are no overlapped entries for these sequences")
+      })
+      
+      output$tempdt <- renderDataTable(server = FALSE,{datatable(dfj())},class = "display")
+      
       
       ################################################################   
       ##################### Admin & Selected Data TabPanel  ##########
