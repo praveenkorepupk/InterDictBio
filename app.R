@@ -266,7 +266,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                             text-align:left; 
                                                             margin-left:2px;')
                             ,align = "left",
-                            bsTooltip("search","Filter data by multiple Sequences", "bottom"),
+                            bsTooltip("search","Filter data by Sequence(s)", "bottom"),
                             br()
                      ),
                      fluidRow(
@@ -302,7 +302,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 
   ")),
                      tabsetPanel(id = 'dataset',
-                                 tabPanel("Results Summary", icon = icon("table"),
+                                 tabPanel("Results Summary", 
+                                          icon = icon("table"),
                                           # tags$head(includeCSS("searchBuilder.dataTables.min.css")),
                                           tags$head(tags$style("#dtsb-group{color: red;font-size: 20px;font-style: italic;}")),
                                           br(), DT::dataTableOutput("sampleData"),
@@ -325,8 +326,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                     # custom column name
                                                                     textInput(inputId = "nameColumn", "Enter Column Name"),
                                                                     actionButton(inputId = "addColumn", "Create Bins"),
-                                                                    actionButton(inputId = "done", "Done")))
-                                 ),
+                                                                    actionButton(inputId = "done", "Done")))),
                                  tabPanel("Dashboard", icon = icon("bar-chart-o"), fluidRow(br(),
                                                                 dashboardSidebar(width = 250),
                                                                 valueBoxOutput("value1", width = 4)
@@ -519,6 +519,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                  ))
 
 server <- function(input, output, session) {
+  
   res_auth <- secure_server(check_credentials = check_credentials(credentials))
   # Create reactive values including all credentials
   creds_reactive <- reactive({
@@ -546,9 +547,11 @@ server <- function(input, output, session) {
   })
   
   output$sampleData <- renderDataTable(server = FALSE,{
-    df100 <- as.data.frame(mon$aggregate('[{"$limit": 1000}]'))
-    df100 <- unique(df100[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
-    dTable(df100)
+    df1000 <- as.data.frame(mon$aggregate('[{"$limit": 1000}]'))
+    df1000 <<- unique(df1000[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
+    print("first 1000")
+    print(head(df1000))
+    dTable(df1000)
   })
   
   
@@ -580,36 +583,29 @@ server <- function(input, output, session) {
     return(x)
   }
   
+  filtered_data <- eventReactive(input$search, 
+                                 if(input$select_seq == "Normal"){
+                                   valueExpr = query_db(input$Sequence)
+                                 }else{
+                                   valueExpr = query_db_reg(input$Sequence) 
+                                   })
   
-  observeEvent(input$select_seq,{
-    
-    if(input$select_seq == "Normal"){
-      filtered_data <<- eventReactive(input$search, valueExpr = query_db(input$Sequence))
-    }else{
-      updateTextInput(session, "Sequence", value = input$Sequence)
-      filtered_data <<- eventReactive(input$search, valueExpr = query_db_reg(input$Sequence))
-    }
-  })
-  
-  
-  filtered_data <- eventReactive(input$search, valueExpr = query_db(input$Sequence))
-  
-  data = reactive({filtered_data()})
+  datas = reactive({filtered_data()})
   # set up reactive value
   reactiveData = reactiveVal()
-  
   # observe data
-  observeEvent(data(),{
-    reactiveData(data())
+  observeEvent(datas(),{
+    reactiveData(datas())
   })
-  
   proxy <- dataTableProxy('sampleData')
-  
   observeEvent(input$search,{
+    reactiveData(filtered_data())
     replaceData(proxy, reactiveData(), resetPaging = TRUE)
     output$sampleData <- renderDataTable(server = FALSE,{
-      dataSet <- reactiveData()
-      dTable(dataSet)
+      sdf <<- reactiveData()
+      print("first 1000")
+      print(head(sdf))
+      dTable(sdf)
     },class = "display")
     
   }
@@ -722,7 +718,7 @@ server <- function(input, output, session) {
   proxy = dataTableProxy('data2')
   observeEvent(input$update,{
     if(!exists("newData")){
-      copyrowdf <<- x()
+      copyrowdf <- x()
       dbRowUpdate(copyrowdf)
       newData <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
       dfh <- rbind(newData,copyrowdf)
@@ -730,9 +726,10 @@ server <- function(input, output, session) {
       newData <- monExpandedRows$find(query = qrys, fields = '{"_id":0,"Position_List" : 0}')
       
     }else{
-      copyrowdf <<- x()
+      copyrowdf <- x()
       dbRowUpdate(copyrowdf)
-      newData <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
+      newData <- newData
+      # newData <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
       dfh <- rbind(newData,copyrowdf)
       qrys <<- paste0('{',cmdMongoDb(dfh, "Entry"),",",cmdMongoDb(dfh, "Sequence"),",",cmdMongoDb(dfh, "Position"),'}')
       newData <- monExpandedRows$find(query = qrys, fields = '{"_id":0,"Position_List" : 0}')
@@ -763,7 +760,8 @@ server <- function(input, output, session) {
       shinyalert(
         title = "Please check your data",
         callbackR = mycallback,
-        text = "All the columns are already Exist",
+        # text = "All the columns are already Exist",
+        text = "The newly added column(s) already exists",
         type = "warning",
         showCancelButton = TRUE,
         showConfirmButton = TRUE,
@@ -863,7 +861,7 @@ server <- function(input, output, session) {
       dbColumnUpdate(newData)
       if(input$nameColumn %in% colnames(newData))
       {
-        shinyalert("warning","The column name is already exist", type = "error")
+        shinyalert("warning","The column name already exists", type = "error")
       }else{
         newData[[input$nameColumn]] <- character(length = nrow(newData))
         newData <<- newData
@@ -881,7 +879,7 @@ server <- function(input, output, session) {
       dbColumnUpdate(newData)
       if(input$nameColumn %in% colnames(newData))
       {
-        shinyalert("warning","The column name is already exist", type = "error")
+        shinyalert("warning","The column name already exists", type = "error")
       }else{
         newData[[input$nameColumn]] <- character(length = nrow(newData))
         newData <<- newData
@@ -915,6 +913,7 @@ server <- function(input, output, session) {
   )
   
   observeEvent(input$select_mathFunction,{
+    
     if(!exists("newData")){
       dtf <- selDF()
       dtf$Count <- as.numeric(dtf$Count)
@@ -965,7 +964,6 @@ server <- function(input, output, session) {
         newcol <- data.frame(newcolval)
         names(newcol) <- input$newcolumnname
         newData <<- cbind(dtf,newcol)
-        
         dbColumnUpdate(newData)
       }
       newData
@@ -1034,7 +1032,7 @@ server <- function(input, output, session) {
       paste0("rowsTemplate.csv")
     },
     content = function(file) {
-      if(!exists("newData") & !exists("newData1")){
+      if(!exists("newData")){
         write.csv(data.frame(matrix(ncol=ncol(filtered_data()),nrow=0, dimnames=list(NULL,names(filtered_data())))),file, row.names = FALSE)
       }else{
         write.csv(data.frame(matrix(ncol=ncol(adcolumn()),nrow=0, dimnames=list(NULL,names(adcolumn())))),file, row.names = FALSE)
