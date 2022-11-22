@@ -1,5 +1,8 @@
 activeClientUrl="http://localhost:8888/"
+<<<<<<< HEAD
 activeEnvironmentName="R_GlobalEnv"
+=======
+>>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
 build-last-errors="[]"
 build-last-errors-base-dir=""
 build-last-outputs="[]"
@@ -7,5 +10,9 @@ compile_pdf_state="{\"tab_visible\":false,\"running\":false,\"target_file\":\"\"
 files.monitored-path=""
 find-in-files-state="{\"handle\":\"\",\"input\":\"\",\"path\":\"\",\"regex\":false,\"ignoreCase\":false,\"results\":{\"file\":[],\"line\":[],\"lineValue\":[],\"matchOn\":[],\"matchOff\":[],\"replaceMatchOn\":[],\"replaceMatchOff\":[]},\"running\":false,\"replace\":false,\"preview\":false,\"gitFlag\":false,\"replacePattern\":\"\"}"
 imageDirtyState="1"
+<<<<<<< HEAD
 portToken="1c8e0e4c7faf"
+=======
+portToken="ae228ed95ded"
+>>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
 saveActionState="0"
