@@ -1,5 +1,9 @@
 {
     "TabSet1": 0,
+<<<<<<< HEAD
     "TabSet2": 4,
+=======
+    "TabSet2": 2,
+>>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
     "TabZoom": {}
 }
