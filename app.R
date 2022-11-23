@@ -1,5 +1,4 @@
 ## InterDictBio R Shiny Application Development
-rm(list=ls())
 library(shinydashboard)
 library(shiny)
 library(mongolite)
@@ -26,93 +25,75 @@ library(igraph)
 library(networkD3)
 library(plyr)
 library(visNetwork)
+library(shinycssloaders)
+library(htmltools)
 
-#### Version - 1
-monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
-monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
+# #### Version - 1
+# monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
+# monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
 
-#### Version - 2
-# monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
-# monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
+### Version - 2
+monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
+monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
+topSequences <- read.csv("./entries_unique_rows.csv")
 
 ###########################################
 # Custom render DataTable Function creation
 ###########################################
+path_to_searchBuilder <- # path to the folder containing the two searchBuilder files
+  normalizePath("customSearchBuilder/")
+
 dTable <- function(df){
-  datatable(df,selection = 'multiple', editable = TRUE,rownames = FALSE, class = 'cell-border stripe',
-            extensions = c("SearchBuilder","Buttons",'ColReorder'), #'Select'
-            options = list(pageLength = 7,
-                           info = TRUE, lengthMenu = list(c(7, -1), c("7", "All")),
-                           initComplete = JS(
-                             "function(settings, json) {",
-                             "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                             "}"),
-                           columnDefs = list(list(className = 'dt-left', targets = "_all")),
-                           scrollX = TRUE,
-                           search = list(regex = TRUE),
-                           searching = TRUE,
-                           colReorder = TRUE,
-                           ordering = TRUE,
-                           dom = "QfrBitlp",
-                           buttons =list(
-                             I('colvis'), 'copy', 'print',
-                             list(
-                               extend = 'collection',
-                               buttons = list(
-                                 list(extend = "csv", filename = "page",exportOptions = list(
-                                   columns = ":visible",modifier = list(page = "current"))
-                                 ),
-                                 list(extend = 'excel', filename = "page", title = NULL,
-                                      exportOptions = list(columns = ":visible",modifier = list(page = "current")))),
-                               text = 'Download current page'),
-                             list(
-                               extend = 'collection',
-                               buttons = list(
-                                 list(extend = "csv", filename = "data",exportOptions = list(
-                                   columns = ":visible",modifier = list(page = "all"))
-                                 ),
-                                 list(extend = 'excel', filename = "data", title = NULL,
-                                      exportOptions = list(columns = ":visible",modifier = list(page = "all")))),
-                               text = 'Download all data')
-                           ),
-                           language = list(searchBuilder= list(title= "Refine your search", add = 'Add Filter Condition')),
-                           searchBuilder = list(
-                             conditions = list(
-                               string = list(
-                                 regex = list(
-                                   conditionName = "matches regex",
-                                   init = JS(
-                                     "function (that, fn, preDefined = null) {",
-                                     "  var el =  $('<input/>').on('input', function() { fn(that, this) });",
-                                     "  if (preDefined !== null) {",
-                                     "     $(el).val(preDefined[0]);",
-                                     "  }",
-                                     "  return el;",
-                                     "}"
-                                   ),
-                                   inputValue = JS(
-                                     "function (el) {",
-                                     "  return $(el[0]).val();",
-                                     "}"
-                                   ),
-                                   isInputValid = JS(
-                                     "function (el, that) {",
-                                     "  return $(el[0]).val().length !== 0;",
-                                     "}"
-                                   ),
-                                   search = JS(
-                                     "function (value, regex) {",
-                                     "  var reg = new RegExp(regex, 'g');",
-                                     "  return reg.test(value);",
-                                     "}"
-                                   )
-                                 )
-                               )
-                             )
-                           )
-            )
+  dtable <- datatable(df,selection = 'multiple', editable = FALSE,rownames = FALSE, class = 'cell-border stripe',
+                      extensions = c("Buttons",'ColReorder'),
+                      options = list(pageLength = 7,info = TRUE, lengthMenu = list(c(7, -1), c("7", "All")),
+                                     initComplete = JS(
+                                       "function(settings, json) {",
+                                       "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                       "}"),
+                                     columnDefs = list(list(className = 'dt-left', targets = "_all")),
+                                     scrollX = TRUE,
+                                     search = list(regex = TRUE),
+                                     searching = TRUE,
+                                     colReorder = TRUE,
+                                     ordering = TRUE,
+                                     dom = "QfrBitlp",
+                                     buttons =list(
+                                       I('colvis'), 'copy', 'print',
+                                       list(
+                                         extend = 'collection',
+                                         buttons = list(
+                                           list(extend = "csv", filename = "page",exportOptions = list(
+                                             columns = ":visible",modifier = list(page = "current"))
+                                           ),
+                                           list(extend = 'excel', filename = "page", title = NULL,
+                                                exportOptions = list(columns = ":visible",modifier = list(page = "current")))),
+                                         text = 'Download current page'),
+                                       list(
+                                         extend = 'collection',
+                                         buttons = list(
+                                           list(extend = "csv", filename = "data",exportOptions = list(
+                                             columns = ":visible",modifier = list(page = "all"))
+                                           ),
+                                           list(extend = 'excel', filename = "data", title = NULL,
+                                                exportOptions = list(columns = ":visible",modifier = list(page = "all")))),
+                                         text = 'Download all data')
+                                     ),
+                                     language = list(searchBuilder= list(title= "Refine your search", add = 'Add Filter Condition')),
+                                     searchBuilder = list()))
+  
+  dep <- htmlDependency(
+    name = "searchBuilder",
+    version = "1.0.0", 
+    src = path_to_searchBuilder,
+    script = "dataTables.searchBuilder.min.js",
+    stylesheet = "searchBuilder.dataTables.min.css",
+    all_files = FALSE
   )
+  dtable$dependencies <- c(dtable$dependencies, list(dep))
+  dtable
 }
+
 
 cmdMongoDb<- function(df, columnName){
   str_json_2 <- paste0('"',columnName,'":{"$in" : ',jsonlite::toJSON(df[[columnName]]),'}')
@@ -142,7 +123,7 @@ dbColumnUpdate <- function(df){
 
 dbRowUpdate <- function(df){
   qry1 <- paste0('{',cmdMongoDb(df, "Entry"),",",cmdMongoDb(df, "Sequence"), ",", cmdMongoDb(df, "Position"),'}')
-  print(dim(monExpandedRows$find(query = qry1))[1])
+  # print(dim(monExpandedRows$find(query = qry1))[1])
   if(dim(monExpandedRows$find(query = qry1))[1]>0){
     colsLs1 <- c("Entry", "Sequence","Position")
     colsLs2 <- names(df)
@@ -150,15 +131,10 @@ dbRowUpdate <- function(df){
     for(i in diffColName2){
       qry2 <- paste0('{',cmdUpdate(df, i),'}')
       monExpandedRows$update(query = qry1, update=qry2)
-      print(monExpandedRows$find(query = qry1))
-      # return(monExpandedRows$find(query = qry1))
     }
   }else{
     monExpandedRows$insert(rjson::toJSON(df))
-    print(monExpandedRows$find(query = qry1))
-    # return(monExpandedRows$find(query = qry1))
   }
-  # return(monExpandedRows$find(query = qry1))
 }
 
 
@@ -185,19 +161,21 @@ idleTimer();"
 
 
 
-# # data.frame with credentials info
+## # data.frame with credentials info
 credentials <- data.frame(
-  user = c("praveen", "puneet", "veda", "sami", "admin"), # mandatory
-  password = c("pk@123", "ps@123","vt@123","sb@123", "admin"), # mandatory
+  # user = c("user1", "user2", "user3", "user4", "admin"), # mandatory
+  user = c("lhamann@interdictbio.com",  "nbratset@interdictbio.com", "cswanson@interdictbio.com", "aschuller@interdictbio.com", "lkenner@interdictbio.com", "dgygi@interdictbio.com", "sbahmanyar@interdictbio.com", "admin@interdictbio.com"), # mandatory
+  password = c("lh@123", "nb@123","cs@123", "as@123", "lk@123","dg@123","sb@123", "admin@123"), # mandatory
   start = c("2015-04-15"), # optinal (all others)
   expire = c("2032-12-31"),
-  admin = c(TRUE, TRUE, FALSE, TRUE, FALSE),
+  admin = c(TRUE, TRUE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE),
   comment = "Simple and secure authentification mechanism 
   for single 'Shiny' applications.",
   stringsAsFactors = FALSE,
-  moreInfo = c("someData1", "someData2","someData3","someData4","someData5"),
-  level = c(2,0,2,0,0)
+  moreInfo = c("someData1", "someData2","someData3","someData4","someData5","someData6","someData7","someData8"),
+  level = c(2,2,2,2,2,2,2,0)
 )
+
 
 css <- HTML(".btn-primary {
                   color: #ffffff;
@@ -219,7 +197,7 @@ set_labels(
 
 ui <- secure_app(head_auth = tags$script(inactivity),
                  theme = shinythemes::shinytheme("united"),
-                 background  = "url('1_1080_2.png');",
+                 background  = "url('blur_image_05_4_3_1.jpg');",
                  fab_position = "none",
                  # fab_button = "none",
                  # fab_position = "bottom-left",
@@ -242,7 +220,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                    dashboardSidebar(
                      tags$script("document.getElementsByClassName('sidebar-toggle')[0].style.visibility = 'hidden';"),
                      width = 250,
-                     radioButtons("select_seq", "Choose Regex or Normal", choices = c("Regex", "Normal")),
+                     radioButtons("select_seq", "Choose Regex or Normal", choices = c("Normal","Regex")),
                      textInput("Sequence", "Enter the sequences"),
                      div(style="text-align:left;padding-left: 20px; font-style: italic;",
                          "Multiple sequences should be",br(), " comma separated with no spaces.",br(), "(E.g. AAAA,AAAT)"),
@@ -267,6 +245,13 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                             br()
                      ),
                      fluidRow(
+                       tags$script(
+                       "$(document).on('shiny:value', function(event) {
+                       // Scroll down after model update
+                       if (event.target.id === 'randomOutput') {
+                       window.scrollTo(0,document.body.scrollHeight);
+                       }});"
+                       ),
                        column(12,
                               br(),
                               br(),
@@ -301,13 +286,12 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                      tabsetPanel(id = 'dataset',
                                  tabPanel("Results Summary", 
                                           icon = icon("table"),
-                                          # tags$head(includeCSS("searchBuilder.dataTables.min.css")),
                                           tags$head(tags$style("#dtsb-group{color: red;font-size: 20px;font-style: italic;}")),
-                                          br(), DT::dataTableOutput("sampleData"),
-                                          
-                                          # downloadButton("downloadData", "Download Selected Rows",
-                                          #                icon = icon("download"),
-                                          #                style="color: #333; background-color: #FFF; border-color: #333"),
+                                          br(), 
+                                          shinycssloaders::withSpinner(
+                                            DT::dataTableOutput("sampleData")
+                                          ),
+                                          # actionButton(inputId = "saveData", "Saving data"),
                                           
                                           shinyjs::useShinyjs(),
                                           shinyjs::hidden(downloadButton("downloadData", "Download Selected Rows",
@@ -317,48 +301,78 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                           
                                           br(),
                                           br(),
-                                          span(textOutput('rendertext'), style="color:black; padding-left: 20px; font-style: italic; font-size: 20px;"),
+                                          br(),
+                                          br(),
+                                          span(textOutput("randomOutput"), style="color:#403b3b;font-size:25px;font-style: italic;text-align: center;font-weight: bold;"),
                                           br(),
                                           br(),
                                           column(DT::dataTableOutput("tempdt"), width = 6),
-                                          DT::dataTableOutput("interSectionData")),
+                                          DT::dataTableOutput("interSectionData"),
+                                          ),
                                  tabPanel("Selected Data", icon = icon("table"), br(),DT::dataTableOutput("data2"),
+                                          hr(),
+                                          actionButton(inputId = "refreshDb", "Extract Data"),
                                           dashboardSidebar(width = 250,
                                                            fluidRow(style = "padding: 40px 14px 5px 14px; margin: 5px 5px 5px 5px; ",
                                                                     # custom column name
                                                                     textInput(inputId = "nameColumn", "Enter Column Name"),
                                                                     actionButton(inputId = "addColumn", "Create Bins"),
                                                                     actionButton(inputId = "done", "Done")))),
-                                 tabPanel("Dashboard", icon = icon("bar-chart-o"), fluidRow(br(),
-                                                                                            dashboardSidebar(width = 250),
-                                                                                            valueBoxOutput("value1", width = 4)
-                                                                                            ,valueBoxOutput("value2", width = 4)
-                                                                                            ,valueBoxOutput("value4", width = 4)),
+                                 tabPanel("Dashboard", icon = icon("bar-chart-o"), 
+                                          fluidRow(br(),
+                                                   dashboardSidebar(width = 250),
+                                                   valueBoxOutput("value1", width = 4)
+                                                   ,valueBoxOutput("value2", width = 4)
+                                                   ,valueBoxOutput("value4", width = 4)),
+                                          fluidRow(br(),
+                                                   style = "padding: 8px 24px 8px 0px;
+                                              margin: 0px 0px 10px 8px;",
+                                                   actionBttn(inputId="genPlots","Generate Plots", icon = icon("bar-chart-o"))),
                                           fluidRow(
-                                            box(
-                                              title = "Sequence vs Entry"
-                                              ,status = "primary"
-                                              ,solidHeader = TRUE 
-                                              ,collapsible = TRUE 
-                                              ,plotlyOutput("seqencePlot", height = "300px")
-                                            ),
-                                            box(
-                                              title = "Sequence vs Count"
-                                              ,status = "primary"
-                                              ,solidHeader = TRUE 
-                                              ,collapsible = TRUE 
-                                              ,plotlyOutput("seqenceCount", height = "300px")
-                                            ),
-                                            box(
-                                              title = "Intersection", 
-                                              status = "warning", 
-                                              solidHeader = TRUE,
-                                              width = 12,
-                                              collapsible = TRUE,
-                                              # simpleNetworkOutput("seqLengthnet")
-                                              visNetworkOutput("seqLengthnet")
-                                            ),
-                                          )
+                                            box(id = "seqplot12", width = 12,
+                                                box(
+                                                  title = "Sequence vs Entry"
+                                                  ,status = "primary"
+                                                  ,solidHeader = TRUE 
+                                                  ,collapsible = TRUE
+                                                  ,width = 12
+                                                  ,shinycssloaders::withSpinner(plotlyOutput("seqencePlot", height = "500px"))
+                                                ),
+                                                box(
+                                                  title = "Sequence vs Count"
+                                                  ,status = "primary"
+                                                  ,solidHeader = TRUE 
+                                                  ,collapsible = TRUE 
+                                                  ,width = 12
+                                                  ,shinycssloaders::withSpinner(plotlyOutput("seqenceCount", height = "500px"))
+                                                ),
+                                                box(
+                                                  title = "Sequence vs Gene Count"
+                                                  ,status = "primary"
+                                                  ,solidHeader = TRUE 
+                                                  ,collapsible = TRUE 
+                                                  ,width = 12
+                                                  ,shinycssloaders::withSpinner(plotlyOutput("seqenceGeneCount", height = "500px"))
+                                                ),
+                                                
+                                                box(
+                                                  title = "Top 100 Sequences"
+                                                  ,status = "primary"
+                                                  ,solidHeader = TRUE 
+                                                  ,collapsible = TRUE 
+                                                  ,width = 12
+                                                  ,dataTableOutput("topSeq")
+                                                )
+                                                # box(
+                                                #   title = "Intersection", 
+                                                #   status = "warning", 
+                                                #   solidHeader = TRUE,
+                                                #   width = 12,
+                                                #   collapsible = TRUE,
+                                                #   # simpleNetworkOutput("seqLengthnet")
+                                                #   shinycssloaders::withSpinner(visNetworkOutput("seqLengthnet"))
+                                                # ),
+                                            ))
                                  ),
                                  tabPanel(
                                    "Admin",icon = icon("user", lib = "glyphicon"),
@@ -380,7 +394,6 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                 fluidRow(style = "padding:5px 15px 5px 5px; margin: 15px 0px 0px 0px;",
                                                          # downloadButton("rowsTemplate", "Download Template"),
                                                          downloadButton('downLoadFilter',"Download Template")))),
-                                   
                                    box(id = "columnID", width = 12,
                                        fluidRow(style = "padding: 5px 14px 5px 14px;
                                           margin: 5px 5px 5px 5px; ",                                         
@@ -408,120 +421,39 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                    ),tags$head(tags$style(HTML('
         /* logo */
         .skin-blue .main-header .logo {
-                              background-image: linear-gradient(45deg, #e6dbdb,#f4f4f4);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                                  }
+                              background-image: linear-gradient(45deg, #e6dbdb,#f4f4f4);}
 
         /* logo when hovered */
         .skin-blue .main-header .logo:hover {
-                              background-image: linear-gradient(45deg, #e6dbdb,#f4f4f4);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }
+                              background-image: linear-gradient(45deg, #e6dbdb,#f4f4f4);}
 
         /* navbar (rest of the header) */
         .skin-blue .main-header .navbar {
-                              background-image: linear-gradient(45deg,#f4f4f4,#8C2D29);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }        
+                              background-image: linear-gradient(45deg,#f4f4f4,#8C2D29);}        
 
         /* main sidebar */
         .skin-blue .main-sidebar {
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }
+                              background-image: linear-gradient(45deg, #052C49,#8C2D29);}
 
         /* active selected tab in the sidebarmenu */
         .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }
+                              background-image: linear-gradient(45deg, #052C49,#8C2D29);}
 
         /* other links in the sidebarmenu */
         .skin-blue .main-sidebar .sidebar .sidebar-menu a{
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }
+                              background-image: linear-gradient(45deg, #052C49,#8C2D29);}
 
         /* other links in the sidebarmenu when hovered */
          .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }
+                              background-image: linear-gradient(45deg, #052C49,#8C2D29);}
         /* toggle button when hovered  */                    
          .skin-blue .main-header .navbar .sidebar-toggle:hover{
-                              background-image: linear-gradient(45deg, #052C49,#8C2D29);
-                              background-position-x: initial;
-                              background-position-y: initial;
-                              background-size: initial;
-                              background-repeat-x: initial;
-                              background-repeat-y: initial;
-                              background-attachment: initial;
-                              background-origin: initial;
-                              background-clip: initial;
-                              background-color: initial;
-                              }
+                              background-image: linear-gradient(45deg, #052C49,#8C2D29);}
                               '))
                    )
                  ))
 
 server <- function(input, output, session) {
-  
   # result_auth <- secure_server(check_credentials = check_credentials(credentials))
   res_auth <- secure_server(check_credentials = check_credentials(credentials))
   
@@ -551,13 +483,23 @@ server <- function(input, output, session) {
     )
   })
   
-  output$sampleData <- renderDataTable(server = FALSE,{
-    df1000 <- as.data.frame(monUniqueRows$aggregate('[{"$limit": 1000}]'))
-    df1000 <- unique(df1000[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
-    print("first 1000")
-    print(head(df1000))
-    dTable(df1000)
+  sData <- reactive({
+    df10 <- as.data.frame(monUniqueRows$aggregate('[{"$limit": 10}]'))
+    df10 <- unique(df10[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
+    dTable(df10)
   })
+  
+  output$sampleData <- renderDataTable(server = FALSE,{
+    sData()
+  })
+  
+  
+  # observeEvent(input$saveData,{
+  #   fdt <<- sData()
+  #   print(input$sampleData_rows_all)
+  #   df11 <- as.data.frame(monUniqueRows$aggregate('[{"$limit": 10}]'))
+  #   print(df11[input$sampleData_rows_all,])
+  # })
   
   x<-reactive({
     req(input$file1)
@@ -580,8 +522,72 @@ server <- function(input, output, session) {
     }
   })
   
-  selectedDf <- reactive({
-    dataSet1 <- filtered_data()
+  query_db <- function(input){
+    doc_type <- paste0(input)
+    # print(doc_-type)
+    str_vector <- input
+    str_json   <- paste0("\"",paste0(unlist(strsplit(str_vector, ",")),collapse= "\",\""),"\"")
+    qry <- paste0('{"Sequence":{"$in" : [',str_json,']}}')
+    qry <- gsub(" ","",qry)
+    x <- monUniqueRows$find(query = qry, fields = '{"Position" : 0}')
+    # x <- x[x$Position_List != "No match", ] # Remove row based on condition
+    if(empty(x) == TRUE){
+      print("Sequence is not matched")
+      columns = c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")
+      x = data.frame(matrix(nrow = 0, ncol = length(columns)))
+      # assign column names
+      colnames(x) = columns
+    }else{
+      x <- unique(x[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
+    }
+    return(x)
+  }
+  
+  query_db_reg <- function(input){
+    doc_type <- paste0(input)
+    # print(doc_type)
+    str_vector <- input
+    str_json   <- paste0("\"",paste0(unlist(strsplit(str_vector, ",")),collapse= "\",\""),"\"")
+    str_vector3 <- rjson::toJSON(str_vector)
+    qry <- paste0('{"Sequence":{"$regex" : ',str_vector3,', "$options" : "i"}}')
+    x <- monUniqueRows$find(query = qry, fields = '{"Position" : 0}')
+    # x <- x[x$Position_List != "No match", ] # Remove row based on condition
+    if(empty(x) == TRUE){
+      print("Sequence is not matched")
+      columns = c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")
+      x = data.frame(matrix(nrow = 0, ncol = length(columns)))
+      # assign column names
+      colnames(x) = columns
+    }else{
+      x <- unique(x[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
+    }
+    return(x)
+  }
+  
+  
+  
+  customFilter <- reactive({
+    if(input$select_seq == "Regex"){
+      valueExpr = query_db_reg(input$Sequence)
+    }else{
+      valueExpr = query_db(input$Sequence)
+    }
+  })
+  
+  filtered_data <- eventReactive(input$search, customFilter())
+  
+  observeEvent(input$search,{
+    output$sampleData <- renderDataTable(server = FALSE,{
+      if(dim(filtered_data())[1] == 0){
+        shinyalert("Oops!", "You have entered wrong sequence", type = "error")
+      }
+      input$search
+      dTable(filtered_data())
+    })
+  })
+  
+  expandedDf<- function(df){
+    dataSet1 <- df
     sel <- input$sampleData_rows_selected
     if(is.null(sel)){
       dfk <- dataSet1[FALSE,]
@@ -590,476 +596,343 @@ server <- function(input, output, session) {
       dfk <- dfk %>% separate_rows(Position_List, sep = ",")
       names(dfk)[names(dfk) == 'Position_List'] <- 'Position'
       dfk$Position <- as.integer(dfk$Position)
-      qry <- paste0('{',cmdMongoDb(dfk, "Entry"),",",cmdMongoDb(dfk, "Sequence"),",",cmdMongoDb(dfk, "Position"),'}')
+    }
+    return(dfk)
+  }
+  
+  rbindcounter <- reactiveVal(0)
+  observeEvent(input$update, rbindcounter(rbindcounter() + 1))
+  selectedDf <- eventReactive(input$refreshDb,{
+    exdf <- expandedDf(filtered_data())
+    #increment per click
+    if(rbindcounter()>0){
+      print("rbind > 0")
+      rdf <- x()
+      dfh <- rbind(exdf[,c('Entry','Sequence','Position')],rdf[,c('Entry','Sequence','Position')])
+      dfh <- dfh[!duplicated(dfh), ]
+      qry <- paste0('{',cmdMongoDb(dfh, "Entry"),",",cmdMongoDb(dfh, "Sequence"),",",cmdMongoDb(dfh, "Position"),'}')
       dfsel <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
+      isolate(dfsel)
+    }else{
+      print("no rbind")
+      qry <- paste0('{',cmdMongoDb(exdf, "Entry"),",",cmdMongoDb(exdf, "Sequence"),",",cmdMongoDb(exdf, "Position"),'}')
+      dfsel <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
+      isolate(dfsel)
+    }
+    
+  })
+  
+  dfInter <- reactive({
+    datac <- filtered_data()
+    datac <-  datac %>%
+      group_by(EntryName) %>%
+      filter(n_distinct(Sequence) > 1) %>%
+      ungroup
+  }) 
+  
+  dfj <- reactive({
+    tempdataF <- dfInter()
+    if(!empty(tempdataF)){
+      tempmydata <- tempdataF
+      tempmydata <- data.frame(lapply(tempmydata, as.character))
+      tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
+      tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence', 'Count')))
+      tempmydata <- tempmydata[,c('EntryName', 'Sequence')] %>% group_by(EntryName) %>% 
+        summarise_all(funs(paste(na.omit(.), collapse = ",")))
+    }else{
+      shiny::showNotification("No data", type = "error")
+      tempmydata <- tempdataF
+      tempmydata <- data.frame(lapply(tempmydata, as.character))
+      tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
+      tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence')))
+      tempmydata
     }
   })
   
-  
-  query_db <- function(input){
-    doc_type <- paste0(input)
-    print(doc_type)
-    str_vector <- input
-    str_json   <- paste0("\"",paste0(unlist(strsplit(str_vector, ",")),collapse= "\",\""),"\"")
-    qry <- paste0('{"Sequence":{"$in" : [',str_json,']}}')
-    x <- monUniqueRows$find(query = qry, fields = '{"Position" : 0}')
-    x <- unique(x[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
-    return(x)
-  }
-  
-  query_db_reg <- function(input){
-    doc_type <- paste0(input)
-    print(doc_type)
-    str_vector <- input
-    str_json   <<- paste0("\"",paste0(unlist(strsplit(str_vector, ",")),collapse= "\",\""),"\"")
-    str_vector2 <<- jsonlite::toJSON(str_vector)
-    str_vector3 <<- rjson::toJSON(str_vector)
-    print(str_json)
-    qry <- paste0('{"Sequence":{"$regex" : ',str_vector3,', "$options" : "i"}}')
-    print(qry)
-    x <- mon$find(query = qry, fields = '{"Position" : 0}')
-    x <- unique(x[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
-    return(x)
-  }
-  
-  filtered_data <- eventReactive(input$search, 
-                                 if(input$select_seq == "Normal"){
-                                   valueExpr = query_db(input$Sequence)
-                                 }else{
-                                   valueExpr = query_db_reg(input$Sequence) 
-                                 })
-  
-  data = reactive({filtered_data()})
-  # set up reactive value
-  reactiveData = reactiveVal()
-  
-  # observe data
-  observeEvent(data(),{
-    reactiveData(data())
+  output$randomOutput <- renderText({
+    req(input$addFilter)
+    paste0("Over lapped entries for sequenses")
   })
   
-  proxy <- dataTableProxy('sampleData')
-  observeEvent(input$search,{
-    replaceData(proxy, reactiveData(), resetPaging = TRUE)
-    output$sampleData <- renderDataTable(server = FALSE,{
-      dataSet <- reactiveData()
-      
-      observeEvent(input$sampleData_rows_selected, {
-        if(input$sampleData_rows_selected == "")
-          shinyjs::hide("downloadData")
-        else
-          shinyjs::show("downloadData")
-      })
-      
-      output$downloadData <- downloadHandler(
-        filename = function() {
-          paste0(gsub(" ","_", gsub(":","\t", Sys.time())),".tsv")
-        },
-        content = function(file) {
-          write.table(dataSet[input$sampleData_rows_selected,], file, row.names = FALSE)
-        }
-      )
-      
-      ## Finding the InterSection between the sequences based on EntryName
-      dfInter <- eventReactive(input$addFilter,{
-        datac <- filtered_data()
-        datac <-  datac %>%
-          group_by(EntryName) %>%
-          filter(n_distinct(Sequence) > 1) %>%
-          ungroup
-      })
-      
+  
+  observeEvent(input$addFilter,{
+    session$sendCustomMessage(type = "scrollCallback", 1)
+    if(dim(dfInter())[1] == 0){
+      shinyalert("Oops!", "There are no overlapped entries for these sequences", type = "info")
+    }else{
       output$interSectionData <- renderDataTable(server = FALSE,{
-        dff <<- dfInter()
-        datatable(dff)
+        datatable(dfInter(), extensions = 'Buttons', 
+                  options = list(dom = 'Bfrtip',
+                                 # buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                                 buttons = c('csv')
+                                 )
+                  )
       })
-      
-      dfj <- reactive({
-        tempdataF <- dfInter()
-        if(!empty(tempdataF)){
-          tempmydata <- tempdataF
-          tempmydata <- data.frame(lapply(tempmydata, as.character))
-          tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
-          tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence', 'Count')))
-          tempmydata <- tempmydata[,c('EntryName', 'Sequence')] %>% group_by(EntryName) %>% 
-            summarise_all(funs(paste(na.omit(.), collapse = ",")))
-        }else{
-          shiny::showNotification("No data", type = "error")
-          tempmydata <- tempdataF
-          tempmydata <- data.frame(lapply(tempmydata, as.character))
-          tempmydata <- transform(table(tempmydata$EntryName, tempmydata$Sequence))
-          tempmydata <- data.frame(setNames(tempmydata, c('EntryName', 'Sequence')))
-          tempmydata
-        }
+      output$tempdt <- renderDataTable(server = FALSE,{
+        datatable(dfj(), extensions = 'Buttons',
+                  caption = "Over lapped entries for sequenses", 
+                  options = list(dom = 'Bfrtip',
+                                 # buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+                                 buttons = c('csv')
+                                 )
+                  )
       })
-      
-      output$rendertext <- renderText({
-        if(nrow(dfj()) == 0)
-          return("There are no overlapped entries for these sequences")
-      })
-      
-      output$tempdt <- renderDataTable(server = FALSE,{datatable(dfj())},class = "display")
-      
-      
-      ################################################################   
-      ##################### Admin & Selected Data TabPanel  ##########
-      ################################################################   
-      
+    }
+    
+  })
+  
+  output$data2 <- renderDataTable(server = FALSE,{
+    df_selected <- selectedDf()
+    mytable = reactive({selectedDf()})
+    # set up reactive value
+    reactiveData = reactiveVal()
+    # observe data
+    observeEvent(mytable(),{
+      reactiveData(mytable())
+    })
+    
+    proxy = dataTableProxy('data2')
+    rowBind <- eventReactive(input$update,{
+      copyrowdf <- x()
+      dbRowUpdate(copyrowdf)
+      qry <- paste0('{',cmdMongoDb(selectedDf(), "Entry"),",",cmdMongoDb(selectedDf(), "Sequence"),",",cmdMongoDb(selectedDf(), "Position"),'}')
+      newData <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
+      dfh <- rbind(newData,copyrowdf)
+      qrys <- paste0('{',cmdMongoDb(dfh, "Entry"),",",cmdMongoDb(dfh, "Sequence"),",",cmdMongoDb(dfh, "Position"),'}')
+      newData <- monExpandedRows$find(query = qrys, fields = '{"_id":0,"Position_List" : 0}')
+    })
+    
+    observeEvent(input$update,{
+      newData <- rowBind()
+      reactiveData(newData)
+      replaceData(proxy, reactiveData())
       output$data2 <- renderDataTable(server = FALSE,{
-        dTable(selectedDf())
+        dTable(reactiveData())
       })
+    })
+    
+    #### Merge new column
+    observeEvent(input$update2,{
+      newData <- reactiveData()
+      get_common_cols <- function(df1, df2)  intersect(names(df1), names(df2))
+      matchedCols <- get_common_cols(y(), selectedDf())
+      print(length(matchedCols) == length(names(y())))
+      mcols <- c("Sequence","Entry","Position")
+      mcolchars <- setdiff(matchedCols,mcols)
       
-      mytable = reactive({selectedDf()})
-      # set up reactive value
-      reactiveData = reactiveVal()
-      # observe data
-      observeEvent(mytable(),{
-        reactiveData(mytable())
-      })
-      
-      proxy = dataTableProxy('data2')
-      observeEvent(input$update,{
-        if(!exists("newData")){
-          copyrowdf <- x()
-          dbRowUpdate(copyrowdf)
-          qry <- paste0('{',cmdMongoDb(selectedDf(), "Entry"),",",cmdMongoDb(selectedDf(), "Sequence"),",",cmdMongoDb(selectedDf(), "Position"),'}')
-          newData <- monExpandedRows$find(query = qry, fields = '{"_id":0,"Position_List" : 0}')
-          dfh <- rbind(newData,copyrowdf)
-          qrys <- paste0('{',cmdMongoDb(dfh, "Entry"),",",cmdMongoDb(dfh, "Sequence"),",",cmdMongoDb(dfh, "Position"),'}')
-          newData <- monExpandedRows$find(query = qrys, fields = '{"_id":0,"Position_List" : 0}')
-        }else{
-          copyrowdf <- x()
-          dbRowUpdate(copyrowdf)
-          newData <- newData
-          dfh <- rbind(newData,copyrowdf)
-          qrys <- paste0('{',cmdMongoDb(dfh, "Entry"),",",cmdMongoDb(dfh, "Sequence"),",",cmdMongoDb(dfh, "Position"),'}')
-          newData <- monExpandedRows$find(query = qrys, fields = '{"_id":0,"Position_List" : 0}')
-        }
-        newData <<- newData
-        reactiveData(newData)
-        replaceData(proxy, reactiveData())
-        output$data2 = renderDataTable(server = FALSE,{
-          dTable(reactiveData())
-        })
-      })
-      #### Merge new column
-      proxy = dataTableProxy('data2')
-      observeEvent(input$update2,{
-        
-        get_common_cols <- function(df1, df2)  intersect(names(df1), names(df2))
-        if(!exists("newData")){
-          matchedCols <- get_common_cols(y(), selectedDf())
-        }else{
-          matchedCols <- get_common_cols(y(), newData)
-        }
-        print(length(matchedCols) == length(names(y())))
-        mcols <- c("Sequence","Entry","Position")
-        mcolchars <<- setdiff(matchedCols,mcols)
-        
-        if(length(matchedCols) == length(names(y()))){
-          shinyalert(
-            title = "Please check your data",
-            callbackR = mycallback,
-            # text = "All the columns are already Exist",
-            text = "The newly added column(s) already exists",
-            type = "warning",
-            showCancelButton = TRUE,
-            showConfirmButton = TRUE,
-            confirmButtonCol = '#DD6B55',
-            confirmButtonText = "Merge",
-            cancelButtonText = "OverWrite",
-            animation = TRUE,
-          )
-        }else{
-          if(!exists("newData")){
-            newData <- merge(selectedDf(), y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
-          }else{
-            newData <- merge(newData, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
-          }
-          newData <<- newData
-          dbColumnUpdate(newData)
-          reactiveData(newData)
-          replaceData(proxy, reactiveData(), resetPaging = FALSE)
-          output$data2 = renderDataTable(server = FALSE,{
-            dTable(reactiveData())
-          })
-        }
-      })
-      
-      mycallback <- function(value) {
-        if(value == TRUE){
-          if(!exists("newData")){
-            newData <- merge(selectedDf(), y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
-            indx <<- grepl(mcolchars, colnames(newData))
-            lss <<- names(newData[indx])
-            newData[mcolchars] <- paste(newData[[lss[1]]],newData[[lss[2]]],sep=",")
-            dropList <<- lss
-            newData <- newData[, !colnames(newData) %in% dropList]
-            dbColumnUpdate(newData)
-          }else{
-            newData <- merge(newData, y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
-            indx <<- grepl(mcolchars, colnames(newData))
-            lss <<- names(newData[indx])
-            newData[mcolchars] <- paste(newData[[lss[1]]],newData[[lss[2]]],sep=",")
-            dropList <<- lss
-            newData <- newData[, !colnames(newData) %in% dropList]
-            dbColumnUpdate(newData)
-          }
-        }else if(value == FALSE){
-          if(!exists("newData")){
-            newData <- merge(x = selectedDf(), y = y(), by = c("Sequence","Entry","Position"), all = T)
-            char <- paste0(mcolchars)
-            char1 <- paste0(mcolchars, ".x", "")
-            char2 <- paste0(mcolchars, ".y", "")
-            newData[char1][!is.na(newData[char2])] <- newData[char2][!is.na(newData[char2])]
-            newData[char] <- newData[char1]
-            dropList2 <<- c(char1, char2)
-            newData <- newData[, !colnames(newData) %in% dropList2]
-            dbColumnUpdate(newData)
-          }else{
-            newData <- merge(x = newData, y = y(), by = c("Sequence","Entry","Position"), all = T)
-            char <- paste0(mcolchars)
-            char1 <- paste0(mcolchars, ".x", "")
-            char2 <- paste0(mcolchars, ".y", "")
-            newData[char1][!is.na(newData[char2])] <- newData[char2][!is.na(newData[char2])]
-            newData[char] <- newData[char1]
-            dropList2 <<- c(char1, char2)
-            newData <- newData[, !colnames(newData) %in% dropList2]
-            dbColumnUpdate(newData)
-          }
-        }
-        newData <<- newData
+      if(length(matchedCols) == length(names(y()))){
+        shinyalert(
+          title = "Please check your data",
+          callbackR = mycallback,
+          text = "All the columns are already Exist",
+          type = "warning",
+          showCancelButton = TRUE,
+          showConfirmButton = TRUE,
+          confirmButtonCol = '#DD6B55',
+          confirmButtonText = "Merge",
+          cancelButtonText = "OverWrite",
+          animation = TRUE,
+        )
+      }else{
+        newData <- merge(selectedDf(), y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
         dbColumnUpdate(newData)
         reactiveData(newData)
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
-        output$data2 = renderDataTable(server = FALSE,{
+        output$data2 = renderDataTable({
           dTable(reactiveData())
         })
       }
-      observeEvent(input$data2_cell_edit, {
-        info = input$data2_cell_edit
-        print(info)
-        if(!exists("newData")){
-          newData <- selectedDf()
-          newData[info$row, info$col+1] <- info$value
-          reactiveData(newData)
-          replaceData(proxy, reactiveData(), resetPaging = FALSE)
-        }else{
-          newData <- reactiveData()
-          newData[info$row, info$col+1] <- info$value
-          reactiveData(newData)
-          replaceData(proxy, reactiveData(), resetPaging = FALSE)
-        }
-      })
+    })
+    
+    mycallback <- function(value) {
+      get_common_cols <- function(df1, df2)  intersect(names(df1), names(df2))
+      matchedCols <- get_common_cols(y(), selectedDf())
+      print(length(matchedCols) == length(names(y())))
+      mcols <- c("Sequence","Entry","Position")
+      mcolchars <- setdiff(matchedCols,mcols)
       
-      # add a column
-      observeEvent(input$addColumn,{
-        if(!exists("newData")){
-          newData <- selectedDf()
-          # dbColumnUpdate(newData)
-          if(input$nameColumn %in% colnames(newData))
-          {
-            shinyalert("warning","The column name already exists", type = "error")
-          }else{
-            newData[[input$nameColumn]] <- character(length = nrow(newData))
-            newData <<- newData
-            reactiveData(newData)
-            replaceData(proxy, reactiveData(), resetPaging = FALSE)
-            output$data2 = renderDataTable(server = FALSE,{
-              print(reactiveData())
-              newData <<- reactiveData()
-              dTable(newData)
-              
-            })
-          }
-        }else{
-          newData <- reactiveData()
-          # dbColumnUpdate(newData)
-          if(input$nameColumn %in% colnames(newData))
-          {
-            shinyalert("warning","The column name already exists", type = "error")
-          }else{
-            newData[[input$nameColumn]] <- character(length = nrow(newData))
-            newData <<- newData
-            reactiveData(newData)
-            replaceData(proxy, reactiveData(), resetPaging = FALSE)
-            output$data2 = renderDataTable(server = FALSE,{
-              print(reactiveData())
-              newData <<- reactiveData()
-              dTable(newData)
-            })
-          }
-        }
+      if(value == TRUE){
+        newData <- merge(selectedDf(), y(), by = c("Sequence","Entry","Position"),all.x = TRUE)
+        indx <- grepl(mcolchars, colnames(newData))
+        lss <- names(newData[indx])
+        newData[mcolchars] <- paste(newData[[lss[1]]],newData[[lss[2]]],sep=",")
+        dropList <- lss
+        newData <- newData[, !colnames(newData) %in% dropList]
+        dbColumnUpdate(newData)
+      }else if(value == FALSE){
+        newData <- merge(x = selectedDf(), y = y(), by = c("Sequence","Entry","Position"), all = T)
+        char <- paste0(mcolchars)
+        char1 <- paste0(mcolchars, ".x", "")
+        char2 <- paste0(mcolchars, ".y", "")
+        newData[char1][!is.na(newData[char2])] <- newData[char2][!is.na(newData[char2])]
+        newData[char] <- newData[char1]
+        dropList2 <- c(char1, char2)
+        newData <- newData[, !colnames(newData) %in% dropList2]
+        dbColumnUpdate(newData)
+      }
+      dbColumnUpdate(newData)
+      reactiveData(newData)
+      replaceData(proxy, reactiveData(), resetPaging = FALSE)
+      output$data2 = renderDataTable({
+        dTable(reactiveData())
       })
-      
-      # check for 'done' button press
-      observeEvent(input$done, {
-        newData <<- reactiveData()
-      })
-      
-      output$downLoadFilter <- downloadHandler(
-        filename = function() {
-          paste('Filtered data-', Sys.Date(), '.csv', sep = '')
-        },
-        content = function(file){
-          if(!exists("newData")){
-            write.csv(data.frame(matrix(ncol=ncol(selectedDf()),nrow=0, dimnames=list(NULL,names(selectedDf())))),file, row.names = FALSE)
-          }else{
-            write.csv(data.frame(matrix(ncol=ncol(newData),nrow=0, dimnames=list(NULL,names(newData)))),file, row.names = FALSE)
-          }
-        }
-      )
-      
-      observeEvent(input$select_mathFunction,{
-        
-        if(!exists("newData")){
-          dtf <- selectedDf()
-          dtf$Count <- as.numeric(dtf$Count)
-          dtf$Length <- as.numeric(dtf$Length)
-          dtf$Position <- as.numeric(dtf$Position)
-          numcolslist <- names(dtf)[sapply(dtf, is.numeric)]
-          updateSelectizeInput(session, "numeric_cols", choices = numcolslist)
-        }else{
-          dtf <- newData
-          dtf$Count <- as.numeric(dtf$Count)
-          dtf$Length <- as.numeric(dtf$Length)
-          dtf$Position <- as.numeric(dtf$Position)
-          numcolslist <- names(dtf)[sapply(dtf, is.numeric)]
-          updateSelectizeInput(session, "numeric_cols", choices = numcolslist)
-        }
-      })
-      
-      reactive_dt <- eventReactive(input$update3, {
-        if(input$select_mathFunction == "Arithmetic Mean"){
-          if(!exists("newData")){
-            dtf <- selectedDf()
-            dtf$Count <- as.numeric(dtf$Count)
-            dtf$Length <- as.numeric(dtf$Length)
-            dtf$Position <- as.numeric(dtf$Position)
-          }else{
-            dtf <- newData
-            dtf$Count <- as.numeric(dtf$Count)
-            dtf$Length <- as.numeric(dtf$Length)
-            dtf$Position <- as.numeric(dtf$Position)
-          }
-          if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
-            newcolval <- rowMeans(dtf[,input$numeric_cols], na.rm=TRUE)
-            newcol <- data.frame(newcolval)
-            names(newcol) <- input$newcolumnname
-            newData <<- cbind(dtf,newcol)
-            
-            dbColumnUpdate(newData)
-          }
-          newData
-        }else if(input$select_mathFunction == "Geometric Mean"){
-          if(!exists("newData")){
-            dtf <- selectedDf()
-          }else{
-            dtf <- newData
-          }
-          if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
-            newcolval <- exp(rowMeans(log(dtf[,input$numeric_cols]), na.rm=TRUE))
-            newcol <- data.frame(newcolval)
-            names(newcol) <- input$newcolumnname
-            newData <<- cbind(dtf,newcol)
-            dbColumnUpdate(newData)
-          }
-          newData
-        }else if(input$select_mathFunction == "Addition"){
-          if(!exists("newData")){
-            dtf <- selectedDf()
-          }else{
-            dtf <- newData
-          }
-          if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
-            newcolval <- apply(dtf[,input$numeric_cols],1,sum)
-            newcol <- data.frame(newcolval)
-            names(newcol) <- input$newcolumnname
-            newData <<- cbind(dtf,newcol)
-            dbColumnUpdate(newData)
-          }
-          newData
-        }
-      })
-      
-      mytable2 = reactive({reactive_dt()})
-      # set up reactive value
-      reactiveData = reactiveVal()
-      # observe data
-      observeEvent(mytable2(),{
-        reactiveData(mytable2())
-      })
-      proxy = dataTableProxy('data2')
-      observeEvent(input$update3,{
-        newData <- reactiveData()
+    }
+    
+    output$downLoadFilter <- downloadHandler(
+      filename = function() {
+        paste('Filtered data-', Sys.Date(), '.csv', sep = '')
+      },
+      content = function(file){
+        write.csv(data.frame(matrix(ncol=ncol(reactiveData()),nrow=0, dimnames=list(NULL,names(reactiveData())))),file, row.names = FALSE)
+      }
+    )
+    
+    observeEvent(input$data2_cell_edit, {
+      info = input$data2_cell_edit
+      newData <- selectedDf()
+      newData[info$row, info$col+1] <- info$value
+      reactiveData(newData)
+      replaceData(proxy, reactiveData(), resetPaging = FALSE)
+    })
+    
+    # add a column
+    observeEvent(input$addColumn,{
+      newData <- selectedDf()
+      if(input$nameColumn %in% colnames(newData))
+      {
+        shinyalert("warning","The column name already exists", type = "error")
+      }else{
+        newData[[input$nameColumn]] <- character(length = nrow(newData))
+        newData <- newData
         reactiveData(newData)
         replaceData(proxy, reactiveData(), resetPaging = FALSE)
         output$data2 = renderDataTable(server = FALSE,{
-          dTable(reactiveData())
+          newData <- reactiveData()
+          dTable(newData)
         })
-      })
-      dTable(dataSet)
-    },class = "display")
-  })
-  observeEvent(input$select_input,{
-    if(input$select_input == "Row"){
-      shinyjs::hide("columnID")
-      shinyjs::show("rowID")
-    }else{
-      shinyjs::hide("rowID")
-      shinyjs::show("columnID")
-    }
-  })
-  
-  exists.m <- function(x) {
-    all(sapply(x, exists))
-  }
-  
-  adcolumn <- reactive({
-    if(is.null(input$addColumn)){
-      dfNew <- selectedDf()
-    }else if(exists("newData1")){
-      dfNew <- newData
-    }else{
-      dfNew <- newData
-    }
-    return(dfNew)
-  })
-  
-  output$rowsTemplate <- downloadHandler(
-    filename = function() {
-      paste0("rowsTemplate.csv")
-    },
-    content = function(file) {
-      if(!exists("newData")){
-        write.csv(data.frame(matrix(ncol=ncol(filtered_data()),nrow=0, dimnames=list(NULL,names(filtered_data())))),file, row.names = FALSE)
-      }else{
-        write.csv(data.frame(matrix(ncol=ncol(adcolumn()),nrow=0, dimnames=list(NULL,names(adcolumn())))),file, row.names = FALSE)
       }
-      
+    })
+    # check for 'done' button press
+    eventReactive(input$done, {
+      newData <- reactiveData()
+    })
+    
+    observeEvent(input$select_mathFunction,{
+      dtf <- selectedDf()
+      dtf$Count <- as.numeric(dtf$Count)
+      dtf$Length <- as.numeric(dtf$Length)
+      dtf$Position <- as.numeric(dtf$Position)
+      numcolslist <- names(dtf)[sapply(dtf, is.numeric)]
+      updateSelectizeInput(session, "numeric_cols", choices = numcolslist)
+    })
+    
+    observeEvent(input$update3, {
+      if(input$select_mathFunction == "Arithmetic Mean"){
+        dtf <- selectedDf()
+        dtf$Count <- as.numeric(dtf$Count)
+        dtf$Length <- as.numeric(dtf$Length)
+        dtf$Position <- as.numeric(dtf$Position)
+        if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
+          newcolval <- rowMeans(dtf[,input$numeric_cols], na.rm=TRUE)
+          newcol <- data.frame(newcolval)
+          names(newcol) <- input$newcolumnname
+          newData <- cbind(dtf,newcol)
+          dbColumnUpdate(newData)
+        }
+      }else if(input$select_mathFunction == "Geometric Mean"){
+        dtf <- selectedDf()
+        dtf$Count <- as.numeric(dtf$Count)
+        dtf$Length <- as.numeric(dtf$Length)
+        dtf$Position <- as.numeric(dtf$Position)
+        if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
+          newcolval <- exp(rowMeans(log(dtf[,input$numeric_cols]), na.rm=TRUE))
+          newcol <- data.frame(newcolval)
+          names(newcol) <- input$newcolumnname
+          newData <- cbind(dtf,newcol)
+          dbColumnUpdate(newData)
+        }
+      }else if(input$select_mathFunction == "Addition"){
+        dtf <- selectedDf()
+        dtf$Count <- as.numeric(dtf$Count)
+        dtf$Length <- as.numeric(dtf$Length)
+        dtf$Position <- as.numeric(dtf$Position)
+        if(input$newcolumnname!="" && !is.null(input$newcolumnname) && input$update3>0){
+          newcolval <- apply(dtf[,input$numeric_cols],1,sum)
+          newcol <- data.frame(newcolval)
+          names(newcol) <- input$newcolumnname
+          newData <- cbind(dtf,newcol)
+          dbColumnUpdate(newData)
+        }
+      }
+      reactiveData(newData)
+      replaceData(proxy, reactiveData(), resetPaging = FALSE)
+      output$data2 = renderDataTable({
+        dTable(reactiveData())
+      })
+    })
+    
+    observeEvent(input$select_input,{
+      if(input$select_input == "Row"){
+        shinyjs::hide("columnID")
+        shinyjs::show("rowID")
+      }else{
+        shinyjs::hide("rowID")
+        shinyjs::show("columnID")
+      }
+    })
+    
+    exists.m <- function(x) {
+      all(sapply(x, exists))
     }
-  )
-  
-  output$columnTemplate <- downloadHandler(
-    filename = function() {
-      paste0("columnsTemplate.csv")
-    },
-    content = function(file) {
-      # Create a Vector with Columns
-      columns = c("Sequence","Entry","Position") 
-      #Create a Empty DataFrame with 0 rows and n columns
-      df = data.frame(matrix(nrow = 0, ncol = length(columns))) 
-      # Assign column names
-      colnames(df) = columns
-      write.csv(data.frame(df),file, row.names = FALSE)
-    }
-  )
+    
+    adcolumn <- reactive({
+      dfNew <- reactiveData()
+    })
+    
+    output$rowsTemplate <- downloadHandler(
+      filename = function() {
+        paste0("rowsTemplate.csv")
+      },
+      content = function(file) {
+        write.csv(data.frame(matrix(ncol=ncol(reactiveData()),nrow=0, dimnames=list(NULL,names(reactiveData())))),file, row.names = FALSE)
+      }
+    )
+    
+    output$columnTemplate <- downloadHandler(
+      filename = function() {
+        paste0("columnsTemplate.csv")
+      },
+      content = function(file) {
+        # Create a Vector with Columns
+        columns = c("Sequence","Entry","Position") 
+        #Create a Empty DataFrame with 0 rows and n columns
+        df = data.frame(matrix(nrow = 0, ncol = length(columns))) 
+        # Assign column names
+        colnames(df) = columns
+        write.csv(data.frame(df),file, row.names = FALSE)
+      }
+    )
+    dTable(df_selected)  
+  })
   
   ################################################################   
   ##################### DashBorad TabPanel  ##################### 
-  ################################################################   
+  ################################################################
+  
+  # filtered_data <- eventReactive(input$sampleData_rows_all, customFilter())
+  # print(input$sampleData_rows_all)
+  # df11 <- as.data.frame(monUniqueRows$aggregate('[{"$limit": 10}]'))
+  # print(df11[input$sampleData_rows_all,])
+    
+  dynamicDF <- reactive({
+    plotdff <- filtered_data()
+    plottempdf <- plotdff[input$sampleData_rows_all,]
+    plottempdf
+  })
+  
   output$value1 <- renderValueBox({
-    dataforCounts <- filtered_data()
+    hide("seqplot12")
+    dataforCounts <- dynamicDF()
     valueBox(
       formatC(length(unique(dataforCounts[["Entry"]])), format="d", big.mark=',')
       ,'Entries'
@@ -1067,7 +940,7 @@ server <- function(input, output, session) {
       ,color = "purple")
   })
   output$value2 <- renderValueBox({ 
-    dataforCounts <- filtered_data()
+    dataforCounts <- dynamicDF()
     valueBox(
       formatC(length(unique(dataforCounts[["GeneNames"]])), format="d", big.mark=',')
       ,'Genes'
@@ -1075,7 +948,7 @@ server <- function(input, output, session) {
       ,color = "green")  
   })
   output$value3 <- renderValueBox({
-    dataforCounts <- filtered_data()
+    dataforCounts <- dynamicDF()
     valueBox(
       formatC(length(unique(dataforCounts[["GeneNames"]])), format="d", big.mark=',')
       ,'Position'
@@ -1083,7 +956,7 @@ server <- function(input, output, session) {
       ,color = "yellow")   
   })  
   output$value4 <- renderValueBox({
-    dataforCounts <- filtered_data()
+    dataforCounts <- dynamicDF()
     valueBox(
       formatC(length(unique(dataforCounts[["Sequence"]])), format="d", big.mark=',')
       ,'Sequence'
@@ -1092,61 +965,97 @@ server <- function(input, output, session) {
   })
   
   #creating the plotOutput content
-  output$seqencePlot <- renderPlotly({
-    dataforPlots <<- filtered_data()
-    seqTable <- as.data.frame(table(dataforPlots$Sequence))
-    colnames(seqTable)<- c("Sequence","Count")
-    p1 <- ggplot(data = seqTable, 
-                 aes(x=Sequence, y=Count, fill=factor(Sequence))) + 
-      geom_bar(position = "dodge", stat = "identity") + ylab("Target Count") + 
-      xlab("Sequence") + theme(legend.position="bottom" 
-                               ,plot.title = element_text(size=15, face="bold")) + 
-      theme(plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
-    ggplotly(p1)
-  })
-  
-  #creating the plotOutput content
-  output$seqenceCount <- renderPlotly({
-    dataforPlots <<- filtered_data()
-    sequenceSumCount <<- dataforPlots
-    sequenceSumCount <<- aggregate(sequenceSumCount$Count, by=list(Category=sequenceSumCount$Sequence), FUN=sum, na.rm=TRUE)
-    colnames(sequenceSumCount)<- c("Sequence","Count")
-    p2 <- ggplot(data = sequenceSumCount, 
-                 aes(x=Sequence, y=Count, fill=factor(Sequence))) + 
-      geom_bar(position = "dodge", stat = "identity") + ylab("Sum of Count") + 
-      xlab("Sequence") + theme(legend.position="bottom" 
-                               ,plot.title = element_text(size=15, face="bold")) + 
-      theme(plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
-    ggplotly(p2)
-  })
-  
-  #creating the plotOutput content
-  output$positionVsLengthBySeq <- renderPlotly({
-    dataforPlots <- filtered_data()
-    dataforPlots <- dataforPlots %>% separate_rows(Position_List, sep = ",")
-    dataforPlots$Position_List <- as.numeric(dataforPlots$Position_List)
-    fig <- plot_ly(data = dataforPlots, x = ~Length, y = ~Position_List, color = ~Sequence, type = "scatter")
-    fig
-  })
-  
-  #creating the plotOutput content
-  output$seqLengthnet <- renderVisNetwork({
-    dataforPlots <<- filtered_data()
-    v1 <- dataforPlots$Sequence
-    v2 <- dataforPlots$Entry
-    v3 <<- append(v1,v2)
-    nodes <<- data.frame(unique(v3),unique(v3))
-    colnames(nodes) <- c("id","title")
-    edges <- dataforPlots[,c(2,7)]
-    colnames(edges) <- c("from", "to")
-    visNetwork(nodes, edges, height = "600px", width = "100%") %>% 
-      visIgraphLayout(physics = T) %>%
-      visInteraction(hover = TRUE) %>%
-      visEvents(hoverNode = "function(nodes) {
-                Shiny.onInputChange('unique_id', nodes);
-                ;}", hoverEdge = "function(edges) {
-    Shiny.onInputChange('unique_id', edges);
-    ;}")
+  observeEvent(input$genPlots,{
+    show("seqplot12")
+    output$seqencePlot <- renderPlotly({
+      dataforPlots <- dynamicDF()
+      seqTable <- as.data.frame(table(dataforPlots$Sequence))
+      colnames(seqTable)<- c("Sequence","Count")
+      p1 <- ggplot(data = seqTable, 
+                   aes(x=Sequence, y=Count, fill=factor(Sequence))) + 
+        geom_bar(position = "dodge", stat = "identity") + ylab("Target Count") + 
+        xlab("Sequence") + theme(legend.position="bottom" 
+                                 ,plot.title = element_text(size=15, face="bold")) + 
+        theme(axis.text.x = element_text(face="bold", angle=45),
+              plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
+      ggplotly(p1)
+    })
+    
+    #creating the plotOutput content
+    output$seqenceCount <- renderPlotly({
+      dataforPlots <- dynamicDF()
+      sequenceSumCount <- dataforPlots
+      sequenceSumCount <- aggregate(sequenceSumCount$Count, by=list(Category=sequenceSumCount$Sequence), FUN=sum, na.rm=TRUE)
+      colnames(sequenceSumCount)<- c("Sequence","Count")
+      p2 <- ggplot(data = sequenceSumCount, 
+                   aes(x=Sequence, y=Count, fill=factor(Sequence))) + 
+        geom_bar(position = "dodge", stat = "identity") + ylab("Sum of Count") + 
+        xlab("Sequence") + theme(legend.position="bottom" 
+                                 ,plot.title = element_text(size=15, face="bold")) + 
+        theme(axis.text.x = element_text(face="bold", angle=45),
+              plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
+      ggplotly(p2)
+    })
+    
+    
+    #creating the plotOutput content
+    output$seqenceGeneCount <- renderPlotly({
+      dataforPlots <- dynamicDF()
+      seqenceGeneCount <- dataforPlots
+      cnt <- with(seqenceGeneCount,table(Sequence, GeneNames))
+      cntdf <- data.frame(cnt)
+      cntdf <- cntdf[cntdf$Freq>0,]
+      seqls <- unique(seqenceGeneCount$Sequence)
+      nm <- NULL
+      ct <- NULL
+      
+      for(i in 1:length(seqls)){
+        ct[i] <-length(cntdf[cntdf$Sequence==seqls[i],]$Freq)
+      }
+      ct1 <- data.frame(seqls,ct)
+      p2 <- ggplot(data = ct1, 
+                   aes(x=seqls, y=ct, fill=factor(seqls))) + 
+        geom_bar(position = "dodge", stat = "identity") + ylab("Genes Count") + 
+        xlab("Sequence") + theme(legend.position="bottom" 
+                                 ,plot.title = element_text(size=10, face="bold")) + 
+        theme(axis.text.x = element_text(face="bold", angle=45),
+              plot.title = element_text(hjust = 0.5)) + labs(fill = "Sequence")
+      ggplotly(p2)
+    })
+    
+    
+    
+    #creating the plotOutput content
+    output$positionVsLengthBySeq <- renderPlotly({
+      dataforPlots <- dynamicDF()
+      dataforPlots <- dataforPlots %>% separate_rows(Position_List, sep = ",")
+      dataforPlots$Position_List <- as.numeric(dataforPlots$Position_List)
+      fig <- plot_ly(data = dataforPlots, x = ~Length, y = ~Position_List, color = ~Sequence, type = "scatter")
+      fig
+    })
+    
+    # #creating the plotOutput content
+    # output$seqLengthnet <- renderVisNetwork({
+    #   dataforPlots <- dynamicDF()
+    #   v1 <<- dataforPlots$Sequence
+    #   v2 <<- dataforPlots$Entry
+    #   v3 <<- append(v1,v2)
+    #   nodes <- data.frame(unique(v3),unique(v3))
+    #   colnames(nodes) <- c("id","title")
+    #   edges <- dataforPlots[,c(2,7)]
+    #   colnames(edges) <- c("from", "to")
+    #   visNetwork(nodes, edges, height = "600px", width = "100%") %>% 
+    #     visIgraphLayout(physics = F) %>%
+    #     visInteraction(hover = TRUE) %>%
+    #     visEvents(hoverNode = "function(nodes) {
+    #             Shiny.onInputChange('unique_id', nodes);
+    #             ;}", hoverEdge = "function(edges) {
+    # Shiny.onInputChange('unique_id', edges);
+    # ;}")
+    # })
+    
+    output$topSeq <- renderDataTable(topSequences)
+    
   })
   
   
@@ -1170,4 +1079,5 @@ server <- function(input, output, session) {
   })
   
 }
+
 shinyApp(ui = ui, server = server)
