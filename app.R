@@ -1,11 +1,15 @@
 ## InterDictBio R Shiny Application Development
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 =======
 
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
 >>>>>>> 41b99f72c1919b1d066c229e6ee4bc36fab8782e
+=======
+
+>>>>>>> main
 library(shinydashboard)
 library(shiny)
 library(mongolite)
@@ -23,13 +27,17 @@ library(shinyalert)
 library(shinyWidgets)
 library(ddpcr)
 <<<<<<< HEAD
+<<<<<<< HEAD
 # remotes::install_github("datastorm-open/shinymanager")
 =======
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+>>>>>>> main
 library(shinymanager)
 library(scrypt)
 library(shinyBS)
 library(spsComps)
+<<<<<<< HEAD
 <<<<<<< HEAD
 library(jsonlite)
 library(igraph)
@@ -172,6 +180,9 @@ dbRowUpdate <- function(df){
 
 
 #####################################
+=======
+
+>>>>>>> main
 
 inactivity <- "function idleTimer() {
 var t = setTimeout(logout, 120000);
@@ -192,6 +203,7 @@ t = setTimeout(logout, 120000);  // time is in milliseconds (1000 is 1 second)
 }
 idleTimer();"
 
+<<<<<<< HEAD
 =======
 
 
@@ -268,6 +280,12 @@ css <- HTML(".btn-primary {
               .panel-primary {
                   border-color: #1384a7;
 =======
+=======
+
+
+# # data.frame with credentials info
+credentials <- data.frame(
+>>>>>>> main
   user = c("praveen", "pk"), # mandatory
   password = c("pk@123", "pk@123"), # mandatory
   start = c("2015-04-15"), # optinal (all others)
@@ -287,7 +305,10 @@ css <- HTML(".btn-primary {
               }
               .panel-primary {
                   border-color: #0dc5c1;
+<<<<<<< HEAD
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+>>>>>>> main
               }")
 
 # In global.R for example:
@@ -296,15 +317,20 @@ set_labels(
   "Please authenticate" = "Please Login",
   "Username:" = "Username:",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "Password:" = "Password:",
   "Add a user" = "Add a user"
 =======
   "Password:" = "Password:"
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+  "Password:" = "Password:"
+>>>>>>> main
 )
 
 ui <- secure_app(head_auth = tags$script(inactivity),
                  theme = shinythemes::shinytheme("united"),
+<<<<<<< HEAD
 <<<<<<< HEAD
                  background  = "url('blur_image_05_4_3_1.jpg');",
 =======
@@ -317,6 +343,9 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 =======
                  background  = "url('1_1080.jpg');",
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+                 background  = "url('1_1080.jpg');",
+>>>>>>> main
                  tags_top = tags$div(
                    tags$head(tags$style(css)),
                    tags$img(
@@ -324,6 +353,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                    )),
                  dashboardPage(
                    dashboardHeader(title = tags$a(tags$img(height = "25px",src="output-onlinepngtools.png")),
+<<<<<<< HEAD
 <<<<<<< HEAD
                                    # tags$li(class="dropdown",tags$a("Help", target="_blank", href="sample.pdf",tags$img(src='help.png'))),
                                    tags$li(class="dropdown",
@@ -351,6 +381,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                              icon = icon("search", "fa-0.5x"),
                                              style='color: #fff; 
 =======
+=======
+>>>>>>> main
                                    tags$li(class="dropdown",tags$a("Help", target="_blank")),
                                    tags$li(class="dropdown",tags$a("User", target="_blank"))
                                    # ,
@@ -373,7 +405,10 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                             class = "btn-primary",
                                                             icon = icon("search", "fa-0.5x"),
                                                             style='color: #fff; 
+<<<<<<< HEAD
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+>>>>>>> main
                                                             white-space:normal;
                                                             background-color: #337ab7; 
                                                             border-color: #2e6da4";
@@ -381,6 +416,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                             font-size:120%;
                                                             text-align:left; 
                                                             margin-left:2px;')
+<<<<<<< HEAD
 <<<<<<< HEAD
                             ,align = "left",
                             bsTooltip("search","Filter data by Sequence(s)", "bottom"),
@@ -402,6 +438,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                            icon = icon("plus-circle"),
                                            style='color: #fff; 
 =======
+=======
+>>>>>>> main
                                            ,align = "left",
                                            bsTooltip("search","Filter data by multiple Sequences", "bottom"),
                                            br()
@@ -415,13 +453,17 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                           class = "btn-primary",
                                                           icon = icon("plus-circle"),
                                                           style='color: #fff; 
+<<<<<<< HEAD
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+>>>>>>> main
                                                           background-color: #337ab7;
                                                           border-color: #2e6da4";
                                                           padding:4px; 
                                                           font-size:120%;
                                                           text-align:left;
                                                           margin-left:16px;'),
+<<<<<<< HEAD
 <<<<<<< HEAD
                               bsTooltip("addFilter","To Find the same Entry across multiple sequences","bottom"),
                               align = "left"),
@@ -455,6 +497,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 >>>>>>> 41b99f72c1919b1d066c229e6ee4bc36fab8782e
                                           
 =======
+=======
+>>>>>>> main
                                              bsTooltip("addFilter","To Find the same Entry across multiple sequences","bottom"),
                                              align = "left"),
                                       
@@ -481,11 +525,15 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                           # div(id="dtsb-title", "Search"),
                                           column(DT::dataTableOutput("tempdt"), width = 6),
                                           DT::dataTableOutput("data"),
+<<<<<<< HEAD
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+>>>>>>> main
                                           shinyjs::useShinyjs(),
                                           shinyjs::hidden(downloadButton("downloadData", "Download Selected Rows",
                                                                          icon = icon("download"),
                                                                          style="color: #333; margin-left:-700px; 
+<<<<<<< HEAD
 <<<<<<< HEAD
                                                                          background-color: #FFF; border-color: #333")),
                                           
@@ -513,10 +561,15 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                  tabPanel("Expanded Sequence Data", br(),DT::dataTableOutput("data2"),
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
 >>>>>>> 41b99f72c1919b1d066c229e6ee4bc36fab8782e
+=======
+                                                                         background-color: #FFF; border-color: #333"))),
+                                 tabPanel("Expanded Sequence Data", br(),DT::dataTableOutput("data2"),
+>>>>>>> main
                                           dashboardSidebar(width = 250,
                                                            fluidRow(style = "padding: 40px 14px 5px 14px; margin: 5px 5px 5px 5px; ",
                                                                     # custom column name
                                                                     textInput(inputId = "nameColumn", "Enter Column Name"),
+<<<<<<< HEAD
 <<<<<<< HEAD
                                                                     actionButton(inputId = "addColumn", "Create Bins"),
                                                                     actionButton(inputId = "done", "Done")))),
@@ -597,6 +650,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                  tabPanel(
                                    "Admin",icon = icon("user", lib = "glyphicon"),
 =======
+=======
+>>>>>>> main
                                                                     actionButton(inputId = "addColumn", "Create Column")))
                                  ),
                                  tabPanel("Dashboard", fluidRow(br(),
@@ -626,7 +681,10 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                  ),
                                  tabPanel(
                                    "Admin",
+<<<<<<< HEAD
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+>>>>>>> main
                                    shinyjs::useShinyjs(),
                                    dashboardSidebar(width = 250),
                                    # add button to add column
@@ -646,12 +704,16 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                          # downloadButton("rowsTemplate", "Download Template"),
                                                          downloadButton('downLoadFilter',"Download Template")))),
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
 =======
                                    
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
 >>>>>>> 41b99f72c1919b1d066c229e6ee4bc36fab8782e
+=======
+                                   
+>>>>>>> main
                                    box(id = "columnID", width = 12,
                                        fluidRow(style = "padding: 5px 14px 5px 14px;
                                           margin: 5px 5px 5px 5px; ",                                         
@@ -676,13 +738,18 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    DT::DTOutput("data_tbl")
                                  )
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
                                  # )
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
+=======
+                                 # )
+>>>>>>> main
                      )
                    ),tags$head(tags$style(HTML('
         /* logo */
         .skin-blue .main-header .logo {
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -711,6 +778,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
         .skin-blue .main-sidebar {
                               background-image: linear-gradient(45deg, #052C49,#8C2D29);}
 =======
+=======
+>>>>>>> main
                               background-color: #0dc5c1;
                               }
 
@@ -752,13 +821,17 @@ ui <- secure_app(head_auth = tags$script(inactivity),
 =======
                               background-color: #283747;
                               }
+<<<<<<< HEAD
 >>>>>>> bd959a69454a69f479b0d55c634886ba0beae25c
 >>>>>>> 41b99f72c1919b1d066c229e6ee4bc36fab8782e
+=======
+>>>>>>> main
                               '))
                    )
                  ))
 
 server <- function(input, output, session) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 <<<<<<< HEAD
@@ -783,6 +856,11 @@ server <- function(input, output, session) {
   
   
 >>>>>>> 41b99f72c1919b1d066c229e6ee4bc36fab8782e
+=======
+  
+  
+  
+>>>>>>> main
   # result_auth <- secure_server(check_credentials = check_credentials(credentials))
   res_auth <- secure_server(check_credentials = check_credentials(credentials))
   
@@ -815,6 +893,7 @@ server <- function(input, output, session) {
   })
   
 <<<<<<< HEAD
+<<<<<<< HEAD
   sData <- reactive({
     df10 <- as.data.frame(monUniqueRows$aggregate('[{"$limit": 10}]'))
     df10 <- unique(df10[c("EntryName","Entry","ProteinName","GeneNames","Organism","Length","Sequence","Position_List","Count")])
@@ -833,6 +912,8 @@ server <- function(input, output, session) {
   #   print(df11[input$sampleData_rows_all,])
   # })
 =======
+=======
+>>>>>>> main
   output$rendertext <- renderText({
     "To find unique entries for different sequences please click below button"
   })
@@ -1016,11 +1097,20 @@ server <- function(input, output, session) {
   })
 =======
   
+<<<<<<< HEAD
   # observe({
   #   print("hello")
   #   shinyjs::removeClass(class = "dtsb-title")
   #   })
   
+=======
+  
+  # observe({
+  #   print("hello")
+  #   shinyjs::removeClass(class = "dtsb-title")
+  #   })
+  
+>>>>>>> main
   proxy <- dataTableProxy('sampleData')
   observeEvent(input$search,{
     replaceData(proxy, reactiveData(), resetPaging = TRUE)
@@ -1644,6 +1734,7 @@ server <- function(input, output, session) {
       dfk <- dfk %>% separate_rows(Position_List, sep = ",")
       names(dfk)[names(dfk) == 'Position_List'] <- 'Position'
 <<<<<<< HEAD
+<<<<<<< HEAD
       dfk$Position <- as.integer(dfk$Position)
     }
     return(dfk)
@@ -1732,6 +1823,8 @@ server <- function(input, output, session) {
 <<<<<<< HEAD
       dfk$Position <- as.integer(dfk$Position)
 =======
+=======
+>>>>>>> main
       dfg <<- dfk
       
       mytable = reactive({dfk})
