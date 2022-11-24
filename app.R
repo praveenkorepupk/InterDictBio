@@ -1089,7 +1089,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$Help, {
     # Absolute path to a pdf
-    file.show(file.path("www/INTERDICTionary_Manual_v2.0.pdf"))
+    file.show(file.path("www/INTERDICTionary_Manual_v1.0.pdf"))
   })
   
 }
