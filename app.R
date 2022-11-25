@@ -210,9 +210,12 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                  dashboardPage(
                    dashboardHeader(title = tags$a(tags$img(height = "25px",src="output-onlinepngtools.png")),
                                    # tags$li(class="dropdown",tags$a("Help", target="_blank", href="sample.pdf",tags$img(src='help.png'))),
+                                   # tags$li(class="dropdown",
+                                   #         actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon",
+                                   #                                                onclick ="window.open('INTERDICTionary_Manual_v1.0.pdf', '_blank')"))),
                                    tags$li(class="dropdown",
-                                           actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon",
-                                                                                  onclick ="window.open('sample.pdf', '_blank')"))),
+                                           actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon"))),
+                                   
                                    tags$li(class="dropdown",
                                            actionLink("User", "User", icon = icon("user", lib = "glyphicon"))),
                                    tags$li(class="dropdown",actionLink("action_logout", "Exit",icon = icon("off", lib = "glyphicon"),
@@ -273,7 +276,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                      # tags$hr(),
                      tags$div(id = 'placeholderAddRemFilt'),
                      tags$div(id = 'placeholderFilter'),
-                     fluidRow(column(12,br(),br(),br(),br(),uiOutput("interDictUrl")))),
+                     fluidRow(column(12,br(),br(),br(),br(),uiOutput("interDictUrl")),
+                              column(12,br(),br(),br(),br(),br(),br(),br(),uiOutput("ExcelraUrl")))),
                    
                    dashboardBody(
                      tags$style(HTML("
@@ -307,7 +311,12 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                           span(textOutput("randomOutput"), style="color:#403b3b;font-size:25px;font-style: italic;text-align: center;font-weight: bold;"),
                                           br(),
                                           br(),
-                                          column(DT::dataTableOutput("tempdt"), width = 6),
+                                          column(DT::dataTableOutput("tempdt"), width = 12),
+                                          br(),
+                                          br(),
+                                          br(),
+                                          br(),
+                                          span(textOutput("randomOutput2"), style="color:#403b3b;font-size:25px;font-style: italic;text-align: center;font-weight: bold;"),
                                           DT::dataTableOutput("interSectionData"),
                                  ),
                                  tabPanel("Selected Data", icon = icon("table"), br(),DT::dataTableOutput("data2"),
@@ -318,11 +327,34 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                     # custom column name
                                                                     textInput(inputId = "nameColumn", "Enter Column Name"),
                                                                     actionButton(inputId = "addColumn", "Create Bins"),
-                                                                    actionButton(inputId = "done", "Done")))),
+                                                                    actionButton(inputId = "done", "Done")),
+                                                           br(),br(),br(),br(),br(),br(),
+                                                           br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                           uiOutput("ExcelraUrl2"))),
                                  tabPanel("Dashboard", icon = icon("bar-chart-o"), 
                                           fluidRow(br(),
-                                                   dashboardSidebar(width = 250),
-                                                   valueBoxOutput("value1", width = 4)
+                                                   dashboardSidebar(width = 250,
+                                                                    br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                                    br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                                    uiOutput("ExcelraUrl3")),
+                                                   box(
+                                                     title = "Most sequences occuring (Top 100)"
+                                                     ,status = "primary"
+                                                     ,solidHeader = TRUE 
+                                                     ,collapsible = TRUE 
+                                                     ,width = 6
+                                                     ,dataTableOutput("topSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                   ),
+                                                   
+                                                   box(
+                                                     title = "Least sequences occuring (Top 100)"
+                                                     ,status = "primary"
+                                                     ,solidHeader = TRUE 
+                                                     ,collapsible = TRUE 
+                                                     ,width = 6
+                                                     ,dataTableOutput("leastSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                   )
+                                                   ,valueBoxOutput("value1", width = 4)
                                                    ,valueBoxOutput("value2", width = 4)
                                                    ,valueBoxOutput("value4", width = 4)),
                                           fluidRow(br(),
@@ -354,26 +386,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                   ,collapsible = TRUE 
                                                   ,width = 12
                                                   ,shinycssloaders::withSpinner(plotlyOutput("seqenceGeneCount", height = "500px"))
-                                                ),
-                                                
-                                                box(
-                                                  title = "Top 100 Sequences"
-                                                  ,status = "primary"
-                                                  ,solidHeader = TRUE 
-                                                  ,collapsible = TRUE 
-                                                  ,width = 6
-                                                  ,dataTableOutput("topSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
-                                                ),
-                                                
-                                                box(
-                                                  title = "Least 100 Sequences"
-                                                  ,status = "primary"
-                                                  ,solidHeader = TRUE 
-                                                  ,collapsible = TRUE 
-                                                  ,width = 6
-                                                  ,dataTableOutput("leastSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
                                                 )
-                                                
                                                 # box(
                                                 #   title = "Intersection", 
                                                 #   status = "warning", 
@@ -388,7 +401,10 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                  tabPanel(
                                    "Admin",icon = icon("user", lib = "glyphicon"),
                                    shinyjs::useShinyjs(),
-                                   dashboardSidebar(width = 250),
+                                   dashboardSidebar(width = 250,
+                                                    br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                    br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                    uiOutput("ExcelraUrl4")),
                                    # add button to add column
                                    radioButtons("select_input", "Choose Row or Column", choices = c("Row", "Column")),
                                    box(id = "rowID",width = 12,
@@ -493,6 +509,47 @@ server <- function(input, output, session) {
                height="60")
     )
   })
+  
+  output$ExcelraUrl <- renderUI({
+    tags$a(
+      href="https://www.excelra.com/", target="_blank",
+      tags$h5("Powered by Excelra", 
+               title="Excelra", 
+               width="180",
+               height="60")
+    )
+  })
+  
+  output$ExcelraUrl2 <- renderUI({
+    tags$a(
+      href="https://www.excelra.com/", target="_blank",
+      tags$h5("Powered by Excelra", 
+              title="Excelra", 
+              width="180",
+              height="60")
+    )
+  })
+  
+  output$ExcelraUrl3 <- renderUI({
+    tags$a(
+      href="https://www.excelra.com/", target="_blank",
+      tags$h5("Powered by Excelra", 
+              title="Excelra", 
+              width="180",
+              height="60")
+    )
+  })
+  
+  output$ExcelraUrl4 <- renderUI({
+    tags$a(
+      href="https://www.excelra.com/", target="_blank",
+      tags$h5("Powered by Excelra", 
+              title="Excelra", 
+              width="180",
+              height="60")
+    )
+  })
+  
   
   sData <- reactive({
     df10 <- as.data.frame(monUniqueRows$aggregate('[{"$limit": 10}]'))
@@ -664,9 +721,13 @@ server <- function(input, output, session) {
   
   output$randomOutput <- renderText({
     req(input$addFilter)
-    paste0("Over lapped entries for sequenses")
+    paste0("Overlapped entries for sequences")
   })
   
+  output$randomOutput2 <- renderText({
+    req(input$addFilter)
+    paste0("Detailed data only for overlapped Entries")
+  })
   
   observeEvent(input$addFilter,{
     session$sendCustomMessage(type = "scrollCallback", 1)
@@ -675,6 +736,7 @@ server <- function(input, output, session) {
     }else{
       output$interSectionData <- renderDataTable(server = FALSE,{
         datatable(dfInter(), extensions = 'Buttons', 
+                  caption = "Detailed data for the overlapped Entries", 
                   options = list(dom = 'Bfrtip',
                                  # buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
                                  buttons = c('csv')
@@ -683,7 +745,7 @@ server <- function(input, output, session) {
       })
       output$tempdt <- renderDataTable(server = FALSE,{
         datatable(dfj(), extensions = 'Buttons',
-                  caption = "Over lapped entries for sequenses", 
+                  #caption = "Overlapped Entries for sequences", 
                   options = list(dom = 'Bfrtip',
                                  # buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
                                  buttons = c('csv')
@@ -943,6 +1005,9 @@ server <- function(input, output, session) {
     plottempdf
   })
   
+  output$topSeq <- renderDataTable(datatable(topSequences, options = list(pageLength=50, scrollX='400px')))
+  output$leastSeq <- renderDataTable(datatable(leastSequences, options = list(pageLength=50, scrollX='400px')))
+  
   output$value1 <- renderValueBox({
     hide("seqplot12")
     dataforCounts <- dynamicDF()
@@ -1066,9 +1131,6 @@ server <- function(input, output, session) {
     # Shiny.onInputChange('unique_id', edges);
     # ;}")
     # })
-    
-    output$topSeq <- renderDataTable(datatable(topSequences, options = list(pageLength=50, scrollX='400px')))
-    output$leastSeq <- renderDataTable(datatable(leastSequences, options = list(pageLength=50, scrollX='400px')))
     
   })
   
