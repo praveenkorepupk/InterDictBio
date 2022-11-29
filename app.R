@@ -35,8 +35,11 @@ library(htmltools)
 ### Version - 2
 monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
 monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio_v2", url = "mongodb://192.168.204.195:27018",verbose = TRUE)
-topSequences <- read.csv("./entries_unique_rows_top100.csv")
-leastSequences <- read.csv("./entries_unique_rows_least100.csv")
+
+top4MerSequences <- read.csv("./entries_unique_rows_top10k_nomatch_4mar.csv")
+least4MerSequences <- read.csv("./entries_unique_rows_least10k_nomatch_4mar.csv")
+top5MerSequences <- read.csv("./entries_unique_rows_top10k_nomatch_5mar.csv")
+least5MerSequences <- read.csv("./entries_unique_rows_least10k_nomatch_5mar.csv")
 
 ###########################################
 # Custom render DataTable Function creation
@@ -338,21 +341,39 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                     br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
                                                                     uiOutput("ExcelraUrl3")),
                                                    box(
-                                                     title = "Most sequences occuring (Top 100)"
+                                                     title = "Most occuring sequences for Tetra peptides (Top 10000)"
                                                      ,status = "primary"
                                                      ,solidHeader = TRUE 
                                                      ,collapsible = TRUE 
                                                      ,width = 6
-                                                     ,dataTableOutput("topSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                     ,dataTableOutput("top4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
                                                    ),
                                                    
                                                    box(
-                                                     title = "Least sequences occuring (Top 100)"
+                                                     title = "Least occuring sequences for Tetra peptides (Top 10000)"
                                                      ,status = "primary"
                                                      ,solidHeader = TRUE 
                                                      ,collapsible = TRUE 
                                                      ,width = 6
-                                                     ,dataTableOutput("leastSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                     ,dataTableOutput("least4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                   ),
+                                                   
+                                                   box(
+                                                     title = "Most occuring sequences for Penta peptides (Top 10000)"
+                                                     ,status = "primary"
+                                                     ,solidHeader = TRUE 
+                                                     ,collapsible = TRUE 
+                                                     ,width = 6
+                                                     ,dataTableOutput("top5MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                   ),
+                                                   
+                                                   box(
+                                                     title = "Least occuring sequences for Penta peptides (Top 10000)"
+                                                     ,status = "primary"
+                                                     ,solidHeader = TRUE 
+                                                     ,collapsible = TRUE 
+                                                     ,width = 6
+                                                     ,dataTableOutput("least5MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
                                                    )
                                                    ,valueBoxOutput("value1", width = 4)
                                                    ,valueBoxOutput("value2", width = 4)
@@ -1005,8 +1026,10 @@ server <- function(input, output, session) {
     plottempdf
   })
   
-  output$topSeq <- renderDataTable(datatable(topSequences, options = list(pageLength=50, scrollX='400px')))
-  output$leastSeq <- renderDataTable(datatable(leastSequences, options = list(pageLength=50, scrollX='400px')))
+  output$top4MerSeq <- renderDataTable(datatable(top4MerSequences, options = list(pageLength=50, scrollX='400px')))
+  output$least4MerSeq <- renderDataTable(datatable(least4MerSequences, options = list(pageLength=50, scrollX='400px')))
+  output$top5MerSeq <- renderDataTable(datatable(top5MerSequences, options = list(pageLength=50, scrollX='400px')))
+  output$least5MerSeq <- renderDataTable(datatable(least5MerSequences, options = list(pageLength=50, scrollX='400px')))
   
   output$value1 <- renderValueBox({
     hide("seqplot12")
