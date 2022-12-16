@@ -216,9 +216,9 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    # tags$li(class="dropdown",
                                    #         actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon",
                                    #                                                onclick ="window.open('INTERDICTionary_Manual_v1.0.pdf', '_blank')"))),
-                                   tags$li(class="dropdown",
-                                           actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon"))),
-                                   
+                                   # tags$li(class="dropdown",
+                                   #         actionLink("Help", "Help", icon = icon("info-sign", lib = "glyphicon"))),
+                                   # 
                                    tags$li(class="dropdown",
                                            actionLink("User", "User", icon = icon("user", lib = "glyphicon"))),
                                    tags$li(class="dropdown",actionLink("action_logout", "Exit",icon = icon("off", lib = "glyphicon"),
@@ -288,6 +288,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
     .tabbable > .nav > li > a[data-value='Selected Data'] {background-color: #847c8a;  color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Dashboard'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Admin'] {background-color: #847c8a; color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Help'] {background-color: #847c8a; color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='6-mer data'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li[class=active] > a {background-image: linear-gradient(45deg, #052C49,#8C2D29); color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
 
   ")),
@@ -357,6 +359,10 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                    #   ,width = 6
                                                    #   ,dataTableOutput("least4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
                                                    # ),
+                                                   fluidRow(br(),
+                                                            style = "padding: 8px 24px 8px 0px;
+                                              margin: 0px 0px 10px 8px;",
+                                                            actionBttn(inputId="genPlots","Generate Plots", icon = icon("bar-chart-o"))),
                                                    
                                                    box(
                                                      title = "Least unique sequences for Penta peptides (Top 10000)"
@@ -378,10 +384,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                    ,valueBoxOutput("value1", width = 4)
                                                    ,valueBoxOutput("value2", width = 4)
                                                    ,valueBoxOutput("value4", width = 4)),
-                                          fluidRow(br(),
-                                                   style = "padding: 8px 24px 8px 0px;
-                                              margin: 0px 0px 10px 8px;",
-                                                   actionBttn(inputId="genPlots","Generate Plots", icon = icon("bar-chart-o"))),
+                                          
                                           fluidRow(
                                             box(id = "seqplot12", width = 12,
                                                 box(
@@ -464,7 +467,16 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    # numericInput("formula", "Multiply", min=0, max=1000, value=1),
                                    actionButton("update3", "Create Math Column"),
                                    DT::DTOutput("data_tbl")
-                                 )
+                                 ),
+                                 tabPanel("6-mer data",icon = icon("table"),
+                                          br(),br(),
+                                          fileInput('sixmerdatafile', 'Upload CSV file',
+                                                    accept=c('text/csv',
+                                                             'text/comma-separated-values,text/plain',
+                                                             '.csv')),
+                                          actionButton("disp6Mer", "View"),
+                                          DT::dataTableOutput("sixmerDisplay")),
+                                 tabPanel("Help",icon = icon("info-sign", lib = "glyphicon"),uiOutput("pdfview"))
                      )
                    ),tags$head(tags$style(HTML('
         /* logo */
@@ -1172,9 +1184,28 @@ server <- function(input, output, session) {
     shinyjs::hide("fab_btn_div")
   })
   
-  observeEvent(input$Help, {
-    # Absolute path to a pdf
-    file.show(file.path("www/INTERDICTionary_Manual_v1.0.pdf"))
+  # observeEvent(input$Help, {
+  #   # Absolute path to a pdf
+  #   file.show(file.path("www/INTERDICTionary_Manual_v1.0.pdf"))
+  # })
+  
+  output$pdfview <- renderUI({
+    tags$iframe(style="height:600px; width:100%", src="INTERDICTionary_Manual_v1.0.pdf")
+  })
+  
+  df_sixmer_upload <- reactive({
+    inFile <- input$sixmerdatafile
+    if (is.null(inFile))
+      return(NULL)
+    df <- read.csv(inFile$datapath, header = TRUE, stringsAsFactors = FALSE)
+    return(df)
+  })
+  
+
+  output$sixmerDisplay <- renderDataTable(server = FALSE,{
+    if(input$disp6Mer){
+      dTable(df_sixmer_upload())
+    }
   })
   
 }
