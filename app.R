@@ -289,7 +289,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
     .tabbable > .nav > li > a[data-value='Dashboard'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Admin'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Help'] {background-color: #847c8a; color:white; font-size: 16px;}
-    .tabbable > .nav > li > a[data-value='6-mer data'] {background-color: #847c8a; color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Upload 6-mer data'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li[class=active] > a {background-image: linear-gradient(45deg, #052C49,#8C2D29); color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
 
   ")),
@@ -468,7 +468,11 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                    actionButton("update3", "Create Math Column"),
                                    DT::DTOutput("data_tbl")
                                  ),
-                                 tabPanel("6-mer data",icon = icon("table"),
+                                 tabPanel("Upload 6-mer data",icon = icon("table"),
+                                          dashboardSidebar(width = 250,
+                                                           br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                           br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                           uiOutput("ExcelraUrl5")),
                                           br(),br(),
                                           fileInput('sixmerdatafile', 'Upload CSV file',
                                                     accept=c('text/csv',
@@ -476,7 +480,12 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                              '.csv')),
                                           actionButton("disp6Mer", "View"),
                                           DT::dataTableOutput("sixmerDisplay")),
-                                 tabPanel("Help",icon = icon("info-sign", lib = "glyphicon"),uiOutput("pdfview"))
+                                 tabPanel("Help",icon = icon("info-sign", lib = "glyphicon"),
+                                          dashboardSidebar(width = 250,
+                                                           br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                           br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
+                                                           uiOutput("ExcelraUrl6")),
+                                          uiOutput("pdfview"))
                      )
                    ),tags$head(tags$style(HTML('
         /* logo */
