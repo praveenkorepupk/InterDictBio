@@ -340,26 +340,26 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                                     br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
                                                                     br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
                                                                     uiOutput("ExcelraUrl3")),
-                                                   box(
-                                                     title = "Most occuring sequences for Tetra peptides (Top 10000)"
-                                                     ,status = "primary"
-                                                     ,solidHeader = TRUE 
-                                                     ,collapsible = TRUE 
-                                                     ,width = 6
-                                                     ,dataTableOutput("top4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
-                                                   ),
+                                                   # box(
+                                                   #   title = "Most occuring sequences for Tetra peptides (Top 10000)"
+                                                   #   ,status = "primary"
+                                                   #   ,solidHeader = TRUE 
+                                                   #   ,collapsible = TRUE 
+                                                   #   ,width = 6
+                                                   #   ,dataTableOutput("top4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                   # ),
+                                                   # 
+                                                   # box(
+                                                   #   title = "Least occuring sequences for Tetra peptides (Top 10000)"
+                                                   #   ,status = "primary"
+                                                   #   ,solidHeader = TRUE 
+                                                   #   ,collapsible = TRUE 
+                                                   #   ,width = 6
+                                                   #   ,dataTableOutput("least4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
+                                                   # ),
                                                    
                                                    box(
-                                                     title = "Least occuring sequences for Tetra peptides (Top 10000)"
-                                                     ,status = "primary"
-                                                     ,solidHeader = TRUE 
-                                                     ,collapsible = TRUE 
-                                                     ,width = 6
-                                                     ,dataTableOutput("least4MerSeq"),style = "height:500px; overflow-y: scroll;overflow-x: scroll;"
-                                                   ),
-                                                   
-                                                   box(
-                                                     title = "Most occuring sequences for Penta peptides (Top 10000)"
+                                                     title = "Least unique sequences for Penta peptides (Top 10000)"
                                                      ,status = "primary"
                                                      ,solidHeader = TRUE 
                                                      ,collapsible = TRUE 
@@ -368,7 +368,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                    ),
                                                    
                                                    box(
-                                                     title = "Least occuring sequences for Penta peptides (Top 10000)"
+                                                     title = "Most unique sequences for Penta peptides (Top 10000)"
                                                      ,status = "primary"
                                                      ,solidHeader = TRUE 
                                                      ,collapsible = TRUE 
