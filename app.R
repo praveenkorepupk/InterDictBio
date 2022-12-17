@@ -28,6 +28,8 @@ library(visNetwork)
 library(shinycssloaders)
 library(htmltools)
 
+# options(shiny.maxRequestSize = 32*1024^2)
+
 # #### Version - 1
 # monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
 # monExpandedRows <- mongo(collection = "entries_seperate_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
@@ -523,6 +525,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                  ))
 
 server <- function(input, output, session) {
+  options(shiny.maxRequestSize=20*1024^2)
   # result_auth <- secure_server(check_credentials = check_credentials(credentials))
   res_auth <- secure_server(check_credentials = check_credentials(credentials))
   
