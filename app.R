@@ -1,6 +1,7 @@
 ## InterDictBio R Shiny Application Development
 library(shinydashboard)
 library(shiny)
+shinyOptions(maxUploadSize=30)
 library(mongolite)
 library(dplyr)
 library(glue)
@@ -28,7 +29,7 @@ library(visNetwork)
 library(shinycssloaders)
 library(htmltools)
 
-# options(shiny.maxRequestSize = 32*1024^2)
+options(shiny.maxRequestSize = 32*1024^2)
 
 # #### Version - 1
 # monUniqueRows <- mongo(collection = "entries_unique_rows", db = "interdictbio", url = "mongodb://192.168.204.195:27017",verbose = TRUE)
@@ -42,6 +43,7 @@ top4MerSequences <- read.csv("./entries_unique_rows_top10k_nomatch_4mar.csv")
 least4MerSequences <- read.csv("./entries_unique_rows_least10k_nomatch_4mar.csv")
 top5MerSequences <- read.csv("./entries_unique_rows_top10k_nomatch_5mar.csv")
 least5MerSequences <- read.csv("./entries_unique_rows_least10k_nomatch_5mar.csv")
+staticSixMerDataFrame <- read.csv("./6mers_for_upload_csv.csv")
 
 ###########################################
 # Custom render DataTable Function creation
@@ -147,7 +149,7 @@ dbRowUpdate <- function(df){
 #####################################
 
 inactivity <- "function idleTimer() {
-var t = setTimeout(logout, 120000);
+var t = setTimeout(logout, 3000000);
 window.onmousemove = resetTimer; // catches mouse movements
 window.onmousedown = resetTimer; // catches mouse movements
 window.onclick = resetTimer;     // catches mouse clicks
@@ -292,6 +294,7 @@ ui <- secure_app(head_auth = tags$script(inactivity),
     .tabbable > .nav > li > a[data-value='Admin'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Help'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li > a[data-value='Upload 6-mer data'] {background-color: #847c8a; color:white; font-size: 16px;}
+    .tabbable > .nav > li > a[data-value='Static 6-mer data'] {background-color: #847c8a; color:white; font-size: 16px;}
     .tabbable > .nav > li[class=active] > a {background-image: linear-gradient(45deg, #052C49,#8C2D29); color:white; font-size: 16px; font-style:oblique; font-weight:bold;}
 
   ")),
@@ -482,6 +485,8 @@ ui <- secure_app(head_auth = tags$script(inactivity),
                                                              '.csv')),
                                           actionButton("disp6Mer", "View"),
                                           DT::dataTableOutput("sixmerDisplay")),
+                                 tabPanel("Static 6-mer data",icon = icon("table"),
+                                          shinycssloaders::withSpinner(dataTableOutput("staticSixmerDisplay"))),
                                  tabPanel("Help",icon = icon("info-sign", lib = "glyphicon"),
                                           dashboardSidebar(width = 250,
                                                            br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),br(),
@@ -1209,7 +1214,7 @@ server <- function(input, output, session) {
     inFile <- input$sixmerdatafile
     if (is.null(inFile))
       return(NULL)
-    df <- read.csv(inFile$datapath, header = TRUE, stringsAsFactors = FALSE)
+    df <- read.csv("", header = TRUE, stringsAsFactors = FALSE)
     return(df)
   })
   
@@ -1219,7 +1224,7 @@ server <- function(input, output, session) {
       dTable(df_sixmer_upload())
     }
   })
-  
+  output$staticSixmerDisplay <- renderDT(dTable(staticSixMerDataFrame), server = FALSE)
 }
 
 shinyApp(ui = ui, server = server)
