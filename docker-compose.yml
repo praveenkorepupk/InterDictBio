@@ -1,0 +1,21 @@
+version: '2.2'
+services:
+  nginx:
+    image: nginx:latest
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443  
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/ssl/certs/apache.crt:/etc/nginx/apache.crt
+      - /etc/ssl/private/apache.key:/etc/nginx/apache.key  
+      
+  shiny:
+    image: r-shiny-app
+    container_name: shiny
+    restart: unless-stopped
+    expose:
+      - 3838
+      - 80
